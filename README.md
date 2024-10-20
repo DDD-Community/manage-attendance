@@ -12,3 +12,6 @@ django-admin runserver
 ## 레퍼런스
 - [셋팅 설정](https://djangostars.com/blog/configuring-django-settings-best-practices/)
 - [셋팅 설정 공식](https://docs.djangoproject.com/en/5.1/topics/settings/)
+- [정식 코딩 스타일](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/coding-style/)
+
+- [웹 프로젝트](https://github.com/dddstudy/ddd-web)
