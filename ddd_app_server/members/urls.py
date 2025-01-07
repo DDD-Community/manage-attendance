@@ -9,7 +9,7 @@ from . import views
 
 # prefix = "members/"
 urlpatterns = [
-    path("", views.MemberListView.as_view(), name="member-list"),  # List all members
-    path("<uuid:member_id>/", views.MemberDetailView.as_view(), name="member-detail"),  # Detail of a specific member
-    path("<uuid:member_id>/attendance/", views.MemberAttendanceView.as_view(), name="member-attendance"),  # Attendance of a specific member
+    # path("", views.MemberListView.as_view(), name="member-list"),  # List all members
+    # path("<uuid:member_id>/", views.MemberDetailView.as_view(), name="member-detail"),  # Detail of a specific member
+    # path("<uuid:member_id>/attendance/", views.MemberAttendanceView.as_view(), name="member-attendance"),  # Attendance of a specific member
 ]
