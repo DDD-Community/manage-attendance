@@ -509,6 +509,18 @@ paths:
                     items:
                       $ref: '#/components/schemas/Schedule'
 
+  /schedules/now:
+    get:
+      tags:
+        - schedule
+      summary: 진행중인 일정 조회
+      description: 지금 진행중인 일정의 세부 페이지로 redirect 합니다.
+      responses:
+        '301':
+          description: 진행중인 일정으로 redirect 됨 /schedules/{schedule_id}
+        '404':
+          description: 진행중인 일정이 없음.
+
   /schedules/{schedule_id}:
     get:
       tags:

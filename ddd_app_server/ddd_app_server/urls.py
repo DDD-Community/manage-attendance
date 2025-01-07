@@ -9,8 +9,9 @@ from django.urls import include, path
 urlpatterns = [
     path("admin/", admin.site.urls),
     # path("", include(router.urls)),  # Default router, if using viewsets
-    path("api-auth/", include('rest_framework.urls', namespace='rest_framework')),
-    path("invite-code/", include('invite_code.urls')),  # Include invite code URLs
+    # path("api-auth/", include('rest_framework.urls', namespace='rest_framework')),
+    path("accounts/", include('allauth.urls')),
+    path("invite-code/", include('invite.urls')),  # Include invite code URLs
     path("members/", include('members.urls')),  # Include member-related URLs
     path("schedules/", include('schedules.urls')),  # Include schedule-related URLs
 ]
