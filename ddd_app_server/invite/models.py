@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 class InviteCode(models.Model):
     INVITE_TYPE_CHOICES = [
-        ('normal', 'Normal'),
+        ('member', 'Member'),
         ('moderator', 'Moderator'),
     ]
 
