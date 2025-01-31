@@ -1,8 +1,10 @@
 from .base import *
 
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 DEBUG = True
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

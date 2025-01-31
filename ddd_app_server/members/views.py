@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.views import View
 from django.http import JsonResponse
-from .models import Member, MemberAttendance
+from .models import Member
 from django.core.serializers import serialize
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -56,6 +56,6 @@ class MemberMemberAttendanceView(View):
     )
     def get(self, request, member_id):
         member = get_object_or_404(Member, id=member_id)
-        MemberAttendances = MemberAttendance.objects.filter(member=member)
-        data = serialize("json", MemberAttendances)
+        # MemberAttendances = MemberAttendance.objects.filter(member=member)
+        data = serialize("json", member)# MemberAttendances)
         return JsonResponse(data, safe=False)
