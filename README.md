@@ -11,7 +11,6 @@ gunicorn ddd_app_server.wsgi:application --bind 0.0.0.0:8000
 ## unix 소켓 사용
 export DJANGO_SETTINGS_MODULE=ddd_app_server.settings.production
 gunicorn ddd_app_server.wsgi:application --bind unix:/tmp/gunicorn.sock
-
 ```
 
 ## 레퍼런스
