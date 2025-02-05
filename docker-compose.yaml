@@ -16,6 +16,8 @@ services:
       - ./ddd_app_server:/app
       - static_volume:/tmp/static
       - media_volume:/tmp/media
+    environment:
+      - DJANGO_SETTINGS_MODULE=ddd_app_server.settings.production
     expose:
       - "8000"
     env_file:
@@ -26,12 +28,13 @@ services:
   nginx:
     image: nginx:stable-alpine
     ports:
-      - 443:443
+      - "443:443"
     volumes:
       - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./config/nginx/conf.d:/etc/nginx/conf.d
-      # - ./config/nginx/conf.d/ddd-app-server.conf:/etc/nginx/conf.d/ddd-app-server.conf
+      # - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - ./config/nginx/conf.d/ddd-app-server.conf:/etc/nginx/conf.d/ddd-app-server.conf
       # - ./config/nginx/conf.d/ddd-app-server-dev.conf:/etc/nginx/conf.d/ddd-app-server-dev.conf
+      - ./.ssl:/etc/ssl
       - static_volume:/tmp/static
       - media_volume:/tmp/media
     # depends_on:

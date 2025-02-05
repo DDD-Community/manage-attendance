@@ -6,20 +6,19 @@ from invite.models import InviteCode
 class Tag(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
+    users = models.ManyToManyField(User, related_name='tags', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
 
-class Member(models.Model):
-    # Connected with Django User (one-to-one relationship)
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='member')  # Django's User model
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    tags = models.ManyToManyField(Tag, related_name='members', blank=True)
-    invite_code = models.OneToOneField(InviteCode, on_delete=models.SET_NULL, null=True, related_name='member')  # Each member has one invite code
+    invite_code = models.ForeignKey(InviteCode, on_delete=models.SET_NULL, null=True, related_name='Profiles')  # Each invite code can be used by multiple members
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+
