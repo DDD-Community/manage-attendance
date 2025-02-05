@@ -25,7 +25,7 @@ tags:
     description: 출석 관련 작업
 
 paths:
-  /health:
+  /health/:
     get:
       tags:
         - health-check
@@ -55,7 +55,7 @@ paths:
                         description: 요청 시각 (ISO8601 포맷, UTC)
                         example: "2024-10-06T12:34:56Z"
 
-  /auth/google/url:
+  /auth/google/url/:
     get:
       tags:
         - auth
@@ -73,7 +73,7 @@ paths:
                     type: string
                     example: "https://accounts.google.com/o/oauth2/auth"
 
-  /auth/google/login:
+  /auth/google/login/:
     post:
       tags:
         - auth
@@ -104,7 +104,7 @@ paths:
         400:
           description: Invalid access token or login failed.
 
-  /auth/google/callback:
+  /auth/google/callback/:
     get:
       tags:
         - auth
@@ -127,7 +127,7 @@ paths:
         400:
           description: auth failed.
 
-  /auth/token/refresh:
+  /auth/token/refresh/:
     post:
       tags:
         - auth
@@ -141,7 +141,7 @@ paths:
             schema:
               type: object
               properties:
-                refresh_token:
+                refresh:
                   type: string
                   example: "your-jwt-refresh-token"
       responses:
@@ -152,13 +152,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  access_token:
+                  access:
                     type: string
-                    example: "new-jwt-access-token"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM4NjcwNjg5LCJpYXQiOjE3Mzg1ODM5MzUsImp0aSI6ImY3MmU2MjhjNzM4YjQ2NzM4MWRkMjY3NWMwN2NkN2IzIiwidXNlcl9pZCI6Mn0.JixmiWoNJrQmNJSXju160MzIymQ50PuE3-oLlXCYBJg"
+                  access_expiration: 
+                    type: string
+                    example: "2025-02-04T12:04:49.565736Z"
         400:
           description: Invalid refresh token.
 
-  /auth/token/verify:
+  /auth/token/verify/:
     post:
       tags:
         - auth
@@ -172,7 +175,7 @@ paths:
             schema:
               type: object
               properties:
-                access_token:
+                token:
                   type: string
                   example: "your-jwt-access-token"
       responses:
@@ -183,20 +186,25 @@ paths:
               schema:
                 type: object
                 properties:
-                  code:
-                    type: number
-                  message:
+                  empty:
                     type: string
-                  data:
-                    type: object
-                    properties:
-                      user_id:
-                        type: integer
-                        example: 123
+        '401':
+          description: Token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Token is invalid or expired"
+                  code:
+                    type: string
+                    example: "token_not_valid"
         400:
           description: Invalid or expired JWT.
 
-  /invite-code:
+  /invite-code/:
     post:
       tags:
         - invite-code
@@ -252,7 +260,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /invite-code/validation:
+  /invite-code/validation/:
     post:
       tags:
         - invite-code
@@ -302,7 +310,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /users:
+  /users/:
     post:
       tags:
         - user
@@ -348,7 +356,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /users/{user_id}:
+  /users/{user_id}/:
     get:
       tags:
         - user
@@ -468,7 +476,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /users/{user_id}/attendance:
+  /users/{user_id}/attendance/:
     get:
       tags:
         - user
@@ -548,7 +556,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /qr/encode:
+  /qr/encode/:
     post:
       tags:
         - qr
@@ -591,7 +599,7 @@ paths:
                         example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                         description: QR 인코딩된 문자열(JWT 등)
 
-  /qr/decode:
+  /qr/decode/:
     post:
       tags:
         - qr
@@ -655,7 +663,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /schedules:
+  /schedules/:
     get:
       tags:
         - schedule
@@ -701,7 +709,7 @@ paths:
                           format: date-time
                           description: 스케쥴 종료 시간 (ISO8601 포맷, UTC)
 
-  /schedules/{schedule_id}:
+  /schedules/{schedule_id}/:
     get:
       tags:
         - schedule
@@ -830,7 +838,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /schedules/{schedule_id}/attendances:
+  /schedules/{schedule_id}/attendances/:
     get:
       tags:
         - attendance
@@ -894,7 +902,7 @@ paths:
                               example: "군대 훈련으로 인한 결석 등..🧏"
                               description: 출석 관련 비고
 
-  /schedules/{schedule_id}/attendances/{user_id}:
+  /schedules/{schedule_id}/attendances/{user_id}/:
     patch:
       tags:
         - attendance
