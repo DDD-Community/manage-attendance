@@ -1,7 +1,7 @@
 from .base import *
 
 CORS_ALLOWED_ORIGINS = [
-    "https://*.ufxpri.dev:8000/",
+    # "https://*.ufxpri.dev:8000/",
 ]
 
 ALLOWED_HOSTS += [
