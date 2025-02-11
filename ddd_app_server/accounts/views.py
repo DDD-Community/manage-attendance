@@ -4,7 +4,6 @@ from urllib.parse import urljoin
 
 from django.urls import reverse
 from django.conf import settings
-from django.shortcuts import render
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,11 +12,17 @@ from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 
 class GoogleLogin(SocialLoginView):
+    authentication_classes = []
+    permission_classes = []
+
     adapter_class = GoogleOAuth2Adapter
     callback_url = settings.GOOGLE_OAUTH_CALLBACK_URL
     client_class = OAuth2Client
 
 class GoogleLoginCallback(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def get(self, request, *args, **kwargs):
         code = request.GET.get('code')
         
@@ -30,6 +35,9 @@ class GoogleLoginCallback(APIView):
         return Response(response.json(), status=status.HTTP_200_OK)
 
 class GoogleLoginUrl(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def get(self, request, *args, **kwargs):
         return Response({
             "url": "https://accounts.google.com/o/oauth2/v2/auth?redirect_uri={google_callback_uri}&prompt=consent&response_type=code&client_id={google_client_id}&scope=openid%20email%20profile&access_type=offline".format(

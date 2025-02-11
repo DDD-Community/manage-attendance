@@ -13,6 +13,6 @@ urlpatterns = [
     path("auth/", include('accounts.urls')),  # Include account-related URLs
     
     path("invite-code/", include('invite.urls')),  # Include invite code URLs
-    path("members/", include('members.urls')),  # Include member-related URLs
+    path("profiles/", include('profiles.urls')),  # Include member-related URLs
     path("schedules/", include('schedules.urls')),  # Include schedule-related URLs
 ]

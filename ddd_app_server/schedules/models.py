@@ -1,7 +1,6 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import User
-from members.models import Member
 
 
 class Schedule(models.Model):
@@ -30,7 +29,7 @@ class Attendance(models.Model):
         ('manual', '수동출석'),
     ]
 
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='attendance_records')  # Many-to-one relation with Member
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendance_records')  # Many-to-one relation with User
     schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name='attendance_records')  # Many-to-one relation with Schedule
     status = models.CharField(max_length=10, choices=ATTENDANCE_STATUS_CHOICES)
     arrive_time = models.DateTimeField(null=True, blank=True)
