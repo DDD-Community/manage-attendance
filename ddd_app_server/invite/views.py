@@ -6,11 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import InviteCode
 from profiles.models import Profile
+from django.viewes.decorators.csrf import csrf_exempt
 
 class InviteCodeCreateView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @csrf_exempt
     def post(self, request, *args, **kwargs):
         invite_type = request.data.get("invite_type")
         expire_time = request.data.get("expire_time", timezone.now() + timezone.timedelta(days=365))
@@ -51,11 +53,11 @@ class InviteCodeCreateView(APIView):
             }
         }, status=201)
 
-
 class InviteCodeValidationView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @csrf_exempt
     def post(self, request, *args, **kwargs):
         code = request.data.get("invite_code")
         if not code:
