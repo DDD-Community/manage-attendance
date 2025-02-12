@@ -1,22 +1,16 @@
 from .base import *
 
-# CORS_ALLOWED_ORIGINS = [
-#     # "https://*.ufxpri.dev:8000/",
-# ]
-
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+ALLOWED_HOSTS += [
+    "localhost",
+    "*.ufxpri.dev",
+    "home.ufxpri.dev",
+]
 
 CSRF_TRUSTED_ORIGINS = [
     "ufxpri.dev",
     "*.ufxpri.dev",
     "home.ufxpri.dev",
     "https://home.ufxpri.dev/",
-]
-
-ALLOWED_HOSTS += [
-    "localhost",
-    "*.ufxpri.dev",
-    "home.ufxpri.dev",
 ]
 
 DATABASES = {
@@ -36,3 +30,4 @@ DATABASES = {
 #         'PORT': os.getenv("DJANGO_DB_PORT", "5432"),
 #     }
 # }
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
