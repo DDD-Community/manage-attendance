@@ -5,8 +5,8 @@ info:
   version: 0.3.0
 
 servers:
-  - url: https://localhost:8000/v1
-    description: 로컬 개발 서버
+  - url: https://home.ufxpri.dev
+    description: 개발용 서버
 
 tags:
   - name: health-check
