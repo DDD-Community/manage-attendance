@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import InviteCode
 from profiles.models import Profile
-from django.viewes.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt
 
 class InviteCodeCreateView(APIView):
     authentication_classes = [JWTAuthentication]

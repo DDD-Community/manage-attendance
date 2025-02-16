@@ -3,15 +3,15 @@ from django.contrib.auth.models import User
 from .models import Profile
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ['name', 'invite_code', 'created_at']
+# class ProfileSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Profile
+#         fields = ['name', 'invite_code', 'created_at']
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
+# class UserProfileSerializer(serializers.ModelSerializer):
+#     profile = ProfileSerializer()
 
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'profile']
+#     class Meta:
+#         model = User
+#         fields = ['id', 'username', 'email', 'profile']
