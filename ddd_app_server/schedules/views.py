@@ -1,222 +1,138 @@
+from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework.views import APIView
+from django.contrib.auth.models import Group
 from .models import Schedule, Attendance
 from .serializers import ScheduleSerializer, AttendanceSerializer
-from django.views.decorators.csrf import csrf_exempt
 
-class ScheduleListView(APIView):
-    """
-    /schedules/
-    GET: 스케쥴 목록 조회
-    """
+# Custom Permission for Admins and Moderators
+class IsAdminOrModerator(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.is_staff or request.user.groups.filter(name="moderator").exists()
+        )
+
+class BaseResponseMixin:
+    def create_response(self, code, message, data=None, status_code=status.HTTP_200_OK):
+        return Response({
+            "code": code,
+            "message": message,
+            "data": data
+        }, status=status_code)
+
+# 스케줄 목록 조회 (사용자 본인의 스케줄만 조회 가능)
+class ScheduleListView(generics.ListAPIView, BaseResponseMixin):
+    serializer_class = ScheduleSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @csrf_exempt
-    def get(self, request, *args, **kwargs):
-        """
-        스케쥴 목록을 조회합니다.
-        """
-        # 모든 스케쥴 불러오기
-        # schedules = Schedule.objects.all()
-        # serializer = ScheduleSerializer(schedules, many=True)
+    def get_queryset(self):
+        return Schedule.objects.filter(attendances__user=self.request.user).distinct()
 
-        # 실제 동작 예시(시리얼라이저 없이)
-        # 데이터베이스 연동이 없으므로 목업 데이터만 반환
-        mock_schedules = [
-            {
-                "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-                "title": "직군 세션2",
-                "description": "커리큘럼에 대한 설명 문구 작성",
-                "start_time": "2023-01-01T10:00:00Z",
-                "end_time": "2023-01-01T12:00:00Z",
-            },
-            {
-                "id": "c56a4180-65aa-42ec-a945-5fd21dec0538",
-                "title": "기수 전체 OT",
-                "description": "전체 오리엔테이션",
-                "start_time": "2023-01-10T10:00:00Z",
-                "end_time": "2023-01-10T12:00:00Z",
-            }
-        ]
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return self.create_response(200, "스케줄 목록을 성공적으로 조회했습니다.", serializer.data)
 
-        return Response({
-            "code": 200,
-            "message": "스케쥴 목록 조회 성공",
-            "data": mock_schedules  # 실제 구현 시에는 serializer.data 사용
-        }, status=status.HTTP_200_OK)
+# 스케줄 생성 (관리자 및 운영진만 가능)
+class ScheduleCreateView(generics.CreateAPIView, BaseResponseMixin):
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = [IsAdminOrModerator]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return self.create_response(201, "스케줄이 성공적으로 생성되었습니다.", serializer.data)
+        return self.create_response(400, "스케줄 생성에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-class ScheduleDetailView(APIView):
-    """
-    /schedules/{schedule_id}/
-    GET: 특정 스케쥴 상세 조회
-    PATCH: 특정 스케쥴 수정
-    DELETE: 특정 스케쥴 삭제
-    """
+# 스케줄 상세 조회
+class ScheduleDetailView(generics.RetrieveAPIView, BaseResponseMixin):
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @csrf_exempt
-    def get_object(self, schedule_id):
-        # UUID가 아닌 "now" 같은 특별 케이스도 처리하고 싶다면 분기 처리를 추가할 수 있습니다.
-        # if schedule_id == "now":
-        #     # 예: 현재 진행 중인 스케쥴을 찾아 반환하는 로직
-        #     return ...
-        # return get_object_or_404(Schedule, pk=schedule_id)
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return self.create_response(200, "스케줄 상세 정보를 성공적으로 조회했습니다.", serializer.data)
 
-        # 여기서는 단순 get_object_or_404 로직 예시
-        # schedule = get_object_or_404(Schedule, pk=schedule_id)
-        # return schedule
-        return None  # 실제 코드에서는 Schedule 객체 반환
+# 스케줄 수정 (관리자 및 운영진만 가능)
+class ScheduleUpdateView(generics.UpdateAPIView, BaseResponseMixin):
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = [IsAdminOrModerator]
 
-    @csrf_exempt
-    def get(self, request, schedule_id, *args, **kwargs):
-        """
-        특정 스케쥴의 세부 정보를 조회합니다.
-        """
-        # schedule = self.get_object(schedule_id)
-        # serializer = ScheduleSerializer(schedule)
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return self.create_response(200, "스케줄이 성공적으로 수정되었습니다.", serializer.data)
+        return self.create_response(400, "스케줄 수정에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-        # 목업 데이터 예시
-        mock_schedule_detail = {
-            "title": "직군 세션2",
-            "description": "커리큘럼에 대한 설명 문구 작성",
-            "start_time": "2023-01-01T10:00:00Z",
-            "end_time": "2023-01-01T12:00:00Z",
-        }
+# 스케줄 삭제 (관리자 및 운영진만 가능)
+class ScheduleDeleteView(generics.DestroyAPIView, BaseResponseMixin):
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = [IsAdminOrModerator]
 
-        return Response({
-            "code": 200,
-            "message": "스케쥴 상세조회 성공",
-            "data": mock_schedule_detail  # 실제 구현 시에는 serializer.data 사용
-        }, status=status.HTTP_200_OK)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return self.create_response(200, "스케줄이 성공적으로 삭제되었습니다.")
 
-    @csrf_exempt
-    def patch(self, request, schedule_id, *args, **kwargs):
-        """
-        특정 스케쥴의 정보를 수정합니다.
-        """
-        # schedule = self.get_object(schedule_id)
-        # serializer = ScheduleSerializer(schedule, data=request.data, partial=True)
-        #
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response({
-        #         "code": 200,
-        #         "message": "스케쥴 수정 성공",
-        #         "data": {}
-        #     }, status=status.HTTP_200_OK)
-        #
-        # return Response({
-        #     "code": 400,
-        #     "message": "잘못된 요청 데이터",
-        #     "data": serializer.errors
-        # }, status=status.HTTP_400_BAD_REQUEST)
-
-        # 목업 응답
-        return Response({
-            "code": 200,
-            "message": "스케쥴 수정 성공",
-            "data": {}
-        }, status=status.HTTP_200_OK)
-
-    @csrf_exempt
-    def delete(self, request, schedule_id, *args, **kwargs):
-        """
-        특정 스케쥴을 삭제합니다.
-        """
-        # schedule = self.get_object(schedule_id)
-        # schedule.delete()
-
-        return Response({
-            "code": 200,
-            "message": "스케쥴 삭제 성공",
-            "data": {}
-        }, status=status.HTTP_200_OK)
-
-
-class AttendanceListView(APIView):
-    """
-    /schedules/{schedule_id}/attendances/
-    GET: 특정 스케줄의 출석 현황 조회
-    """
+class AttendanceListView(generics.ListAPIView, BaseResponseMixin):
+    serializer_class = AttendanceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @csrf_exempt
-    def get(self, request, schedule_id, *args, **kwargs):
-        """
-        특정 스케줄의 출석 현황을 조회합니다.
-        """
-        # schedule = get_object_or_404(Schedule, pk=schedule_id)
-        # attendances = Attendance.objects.filter(schedule=schedule)
-        #
-        # attendance_count = attendances.filter(attendance_status="present").count()
-        # late_count = attendances.filter(attendance_status="late").count()
-        # absent_count = attendances.filter(attendance_status="absent").count()
-        #
-        # serializer = AttendanceSerializer(attendances, many=True)
+    def get_queryset(self):
+        schedule_id = self.kwargs.get('schedule_id')
+        return Attendance.objects.filter(schedule_id=schedule_id)
 
-        # 목업 데이터 예시
-        mock_data = {
-            "attendance_count": 10,
-            "late_count": 2,
-            "absent_count": 1,
-            "members": [
-                {
-                    "name": "김디디",
-                    "tags": ["role:member", "position:designer", "team:ios2", "generation:11기"],
-                    "attendance_status": "present",
-                    "note": ""
-                },
-                {
-                    "name": "이챗GPT",
-                    "tags": ["role:member", "position:developer", "team:backend", "generation:10기"],
-                    "attendance_status": "late",
-                    "note": "버스 연착"
-                }
-            ]
-        }
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return self.create_response(200, "출석 목록을 성공적으로 조회했습니다.", serializer.data)
 
-        return Response({
-            "code": 200,
-            "message": "출석 현황 조회 성공",
-            "data": mock_data  # 실제 구현 시에는 serializer.data를 포함한 통계 처리
-        }, status=status.HTTP_200_OK)
-
-
-class AttendanceDetailView(APIView):
-    """
-    /schedules/{schedule_id}/attendances/{user_id}/
-    PATCH: 특정 스케줄의 특정 유저 출석 상태 수정
-    """
+class AttendanceDetailView(generics.RetrieveAPIView, BaseResponseMixin):
+    serializer_class = AttendanceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @csrf_exempt
-    def patch(self, request, schedule_id, user_id, *args, **kwargs):
-        """
-        특정 스케줄의 특정 유저 출석 상태를 수정합니다.
-        """
-        # schedule = get_object_or_404(Schedule, pk=schedule_id)
-        # attendance = get_object_or_404(Attendance, schedule=schedule, user__id=user_id)
-        #
-        # serializer = AttendanceSerializer(attendance, data=request.data, partial=True)
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response({
-        #         "code": 200,
-        #         "message": "출석 수정 성공",
-        #         "data": {}
-        #     }, status=status.HTTP_200_OK)
-        # return Response({
-        #     "code": 400,
-        #     "message": "잘못된 요청 데이터",
-        #     "data": serializer.errors
-        # }, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        schedule_id = self.kwargs.get('schedule_id')
+        user_id = self.kwargs.get('user_id')
+        return Attendance.objects.filter(schedule_id=schedule_id, user_id=user_id)
 
-        # 목업 응답
-        return Response({
-            "code": 200,
-            "message": "출석 수정 성공",
-            "data": {}
-        }, status=status.HTTP_200_OK)
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return self.create_response(200, "출석 상세 정보를 성공적으로 조회했습니다.", serializer.data)
+
+# 출석 등록 및 수정 (사용자는 자신의 출석만 수정 가능)
+class AttendanceUpdateView(APIView, BaseResponseMixin):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, schedule_id, *args, **kwargs):
+        schedule = get_object_or_404(Schedule, id=schedule_id)
+        user = request.user
+
+        # 출석 가능 여부 체크 (현재 시간이 스케줄 진행 시간 내에 있는지 확인)
+        if not (schedule.start_time <= now() <= schedule.end_time):
+            return self.create_response(400, "현재 출석을 등록할 수 없는 시간입니다.", None, status.HTTP_400_BAD_REQUEST)
+
+        # 사용자 출석 정보 가져오기 (없으면 새로 생성)
+        attendance, created = Attendance.objects.get_or_create(user=user, schedule=schedule)
+        
+        # 출석 상태 업데이트
+        attendance.status = request.data.get("status", attendance.status)
+        attendance.method = request.data.get("method", attendance.method)
+        attendance.attendance_time = now()
+        attendance.note = request.data.get("note", attendance.note)
+        attendance.save()
+
+        serializer = AttendanceSerializer(attendance)
+        return self.create_response(200, "출석이 성공적으로 업데이트되었습니다.", serializer.data)

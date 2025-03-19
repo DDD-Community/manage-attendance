@@ -1,10 +1,16 @@
 from django.contrib import admin
-from .models import Schedule
+from .models import Schedule, Attendance
 
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ('title', 'description', 'start_time', 'end_time', 'created_at')
-    list_filter = ('start_time', 'end_time')
+    list_display = ('title', 'start_time', 'end_time', 'created_at')
     search_fields = ('title', 'description')
-    ordering = ('start_time',)
+    list_filter = ('start_time', 'end_time')
+    ordering = ('-start_time',)
 
+@admin.register(Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'schedule', 'status', 'attendance_time', 'method')
+    search_fields = ('user__username', 'schedule__title')
+    list_filter = ('status', 'method', 'attendance_time')
+    ordering = ('-attendance_time',)

@@ -7,10 +7,9 @@ ALLOWED_HOSTS += [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "ufxpri.dev",
-    "*.ufxpri.dev",
-    "home.ufxpri.dev",
-    "https://home.ufxpri.dev/",
+    "https://ufxpri.dev",
+    "https://*.ufxpri.dev",
+    "https://home.ufxpri.dev",
 ]
 
 DATABASES = {
