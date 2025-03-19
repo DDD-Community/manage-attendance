@@ -1,85 +1,75 @@
-import random
-from django.utils import timezone
-from django.http import JsonResponse
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from django.utils.timezone import now
 from .models import InviteCode
-from profiles.models import Profile
-from django.views.decorators.csrf import csrf_exempt
+from .serializers import InviteCodeSerializer
+from django.contrib.auth.models import User, Group
 
-class InviteCodeCreateView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+# 초대 코드 생성 뷰
+class InviteCodeCreateView(generics.CreateAPIView):
+    queryset = InviteCode.objects.all()
+    serializer_class = InviteCodeSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    @csrf_exempt
-    def post(self, request, *args, **kwargs):
-        invite_type = request.data.get("invite_type")
-        expire_time = request.data.get("expire_time", timezone.now() + timezone.timedelta(days=365))
-        one_time_use = str(request.data.get("one_time_use", "false")).lower() == "true"
-
-        if invite_type not in dict(InviteCode.INVITE_TYPE_CHOICES):
-            return JsonResponse({
-                "code": 400,
-                "message": "Invalid invite type.",
-                "data": {
-                    "your_input": invite_type,
-                    "supported_input": list(dict(InviteCode.INVITE_TYPE_CHOICES).keys())
-                }
-            }, status=400)
-
-        # Generate a unique 4-digit code
-        existing_codes = set(InviteCode.objects.filter(expire_time__gt=timezone.now()).values_list("code", flat=True))
-        code = next((f"{random.randint(0, 9999):04}" for _ in range(10000) if f"{random.randint(0, 9999):04}" not in existing_codes), None)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         
-        if not code:
-            return JsonResponse({"code": 500, "message": "Failed to generate a unique invite code."}, status=500)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "code": 201,
+                "message": "초대 코드가 생성되었습니다.",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "code": 400,
+            "message": "초대 코드 생성에 실패했습니다.",
+            "data": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-        invite_code = InviteCode.objects.create(
-            code=code,
-            invite_type=invite_type,
-            created_by=request.user,
-            expire_time=expire_time,
-            one_time_use=one_time_use,
-        )
-
-        return JsonResponse({
-            "code": 201,
-            "message": "Invite code created successfully.",
-            "data": {
-                "code": code,
-                "invite_type": invite_type,
-                "created_at": invite_code.created_at.isoformat(),
-            }
-        }, status=201)
-
-class InviteCodeValidationView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    @csrf_exempt
+# 초대 코드 검증 및 사용자 그룹 설정 뷰
+class InviteCodeValidateView(generics.GenericAPIView):
+    serializer_class = InviteCodeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
     def post(self, request, *args, **kwargs):
-        code = request.data.get("invite_code")
+        code = request.data.get('invite_code')
         if not code:
-            return JsonResponse({"code": 400, "message": "Invite code is required.", "data": {}}, status=400)
-
+            return Response({
+                "code": 400,
+                "message": "초대 코드를 입력하세요.",
+                "data": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            invite_code = InviteCode.objects.filter(code=code).latest("expire_time")
-
-            if invite_code.is_expired:
-                return JsonResponse({"code": 400, "message": "Invite code is expired.", "data": {}}, status=400)
-
-            if invite_code.one_time_use and Profile.objects.filter(invite_code__code=code).exists():
-                return JsonResponse({"code": 400, "message": "Invite code is already used.", "data": {}}, status=400)
-
-            return JsonResponse({
+            invite_code = InviteCode.objects.get(code=code, expire_time__gte=now(), used=False)
+            
+            # Return invite code information without setting user group
+            return Response({
                 "code": 200,
-                "message": "Invite code is valid.",
+                "message": "초대 코드가 유효합니다.",
                 "data": {
                     "valid": True,
+                    "invite_code_id": invite_code.id,
                     "invite_type": invite_code.invite_type,
-                    "created_by": invite_code.created_by.username,
+                    "expire_time": invite_code.expire_time,
+                    "one_time_use": invite_code.one_time_use
                 }
-            }, status=200)
+            }, status=status.HTTP_200_OK)
         except InviteCode.DoesNotExist:
-            return JsonResponse({"code": 400, "message": "Invite code does not exist.", "data": {}}, status=400)
+            return Response({
+                "code": 400,
+                "message": "유효하지 않은 초대 코드입니다.",
+                "data": {
+                    "valid": False,
+                    "error": "유효하지 않은 초대 코드입니다."
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+# 초대 코드 목록 조회 뷰
+class InviteCodeListView(generics.ListAPIView):
+    serializer_class = InviteCodeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return InviteCode.objects.filter(created_by=self.request.user).order_by('-created_at')
