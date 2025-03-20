@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from .models import Schedule, Attendance
 
 class ScheduleSerializer(serializers.ModelSerializer):
@@ -15,11 +16,37 @@ class ScheduleSerializer(serializers.ModelSerializer):
 class AttendanceSerializer(serializers.ModelSerializer):
     schedule_title = serializers.ReadOnlyField(source='schedule.title')
     user_name = serializers.ReadOnlyField(source='user.username')
+    user_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Attendance
-        fields = ['id', 'user', 'user_name', 'schedule', 'schedule_title', 'status', 'attendance_time', 'method', 'note']
-        read_only_fields = ['id', 'user', 'schedule', 'schedule_title', 'user_name', 'attendance_time']
+        fields = ['id', 'user', 'user_id', 'user_name', 'schedule', 'schedule_title', 
+                 'status', 'attendance_time', 'method', 'note']
+        read_only_fields = ['id', 'schedule', 'schedule_title', 'user_name', 'attendance_time']
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if not request:
+            raise serializers.ValidationError("Request context is required")
+
+        # Get user from URL or request
+        user_id = self.context.get('user_id')
+        if user_id:
+            try:
+                user = get_user_model().objects.get(id=user_id)
+            except get_user_model().DoesNotExist:
+                raise serializers.ValidationError("User does not exist")
+        else:
+            user = request.user
+
+        # Check permissions
+        if not (request.user.is_staff or request.user.groups.filter(name="moderator").exists()):
+            if user != request.user:
+                raise serializers.ValidationError("You can only update your own attendance")
+
+        # Set user in data
+        data['user'] = user
+        return data
 
     def validate_status(self, value):
         if value not in dict(Attendance.ATTENDANCE_STATUS_CHOICES):

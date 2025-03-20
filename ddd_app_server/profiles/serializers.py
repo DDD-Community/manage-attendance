@@ -1,17 +1,28 @@
 from rest_framework import serializers
 from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from profiles.models import Profile
 from invite.models import InviteCode
 from django.utils import timezone
 
+User = get_user_model()
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        read_only_fields = ['id']
+
 class ProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         model = Profile
-        fields = ['id', 'name', 'invite_code_id', 'role', 'team']
+        fields = ['id', 'user', 'name', 'invite_code_id', 'role', 'team', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -49,6 +60,9 @@ class ProfileSerializer(serializers.ModelSerializer):
                 if invite_code.one_time_use:
                     invite_code.used = True
                     invite_code.save()
+                # Update type group
+                type_group, _ = Group.objects.get_or_create(name=invite_code.invite_type)
+                request_user.groups.add(type_group)
             except InviteCode.DoesNotExist:
                 raise serializers.ValidationError({"invite_code_id": "Invalid invite code."})
         

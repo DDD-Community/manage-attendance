@@ -10,9 +10,10 @@ from ddd_app_server.health import health_check
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", health_check),
-    path("auth/", include('accounts.urls')),  # Include account-related URLs
+    path("auth/", include('accounts.urls')),
     
-    path("invite-code/", include('invite.urls')),  # Include invite code URLs
-    path("profiles/", include('profiles.urls')),  # Include member-related URLs
-    path("schedules/", include('schedules.urls')),  # Include schedule-related URLs
+    path("invite-code/", include('invite.urls')),
+    path("qrcode/", include('qrcode.urls')),
+    path("profiles/", include('profiles.urls')),
+    path("schedules/", include('schedules.urls')),
 ]

@@ -1,31 +1,56 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from .models import Profile
 from .serializers import ProfileSerializer
 
+class BaseResponseMixin:
+    def create_response(self, code, message, data=None, status_code=status.HTTP_200_OK):
+        return Response({
+            "code": code,
+            "message": message,
+            "data": data
+        }, status=status_code)
+
+class IsAdminOrModerator(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.is_staff or request.user.groups.filter(name="moderator").exists()
+        )
+
 # 프로필 조회 및 수정 뷰
-class ProfileDetailView(generics.RetrieveUpdateAPIView):
-    queryset = Profile.objects.all()
+class ProfileDetailView(generics.RetrieveUpdateAPIView, BaseResponseMixin):
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user.profile
 
-# 프로필 생성 뷰 (초기 유저 가입 시 생성)
-class ProfileCreateView(generics.CreateAPIView):
-    queryset = Profile.objects.all()
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return self.create_response(200, "프로필 정보를 성공적으로 조회했습니다.", serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return self.create_response(200, "프로필이 성공적으로 수정되었습니다.", serializer.data)
+        return self.create_response(400, "프로필 수정에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+class UserProfileDetailView(generics.RetrieveAPIView, BaseResponseMixin):
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
-    def create(self, request, *args, **kwargs):
-        user = request.user
-        if hasattr(user, 'profile'):
-            return Response({"error": "프로필이 이미 존재합니다."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_object(self):
+        user_id = self.kwargs.get('user_id')
+        return get_object_or_404(Profile, user_id=user_id)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return self.create_response(200, "사용자 프로필 정보를 성공적으로 조회했습니다.", serializer.data)
