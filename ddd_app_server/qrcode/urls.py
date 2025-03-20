@@ -1,6 +1,5 @@
 from django.urls import path
-from .views import (
-)
+from .views import QRCodeGenerateView, QRCodeValidateView
 
 # # prefix = "schedules/"
 # urlpatterns = [
@@ -10,7 +9,8 @@ from .views import (
 #     path('<uuid:schedule_id>/attendances/<uuid:user_id>/', AttendanceDetailView.as_view(), name='attendance_detail'),
 # ]
 
+# prefix = "qrcode/"
 urlpatterns = [
-    path('encode/', encode_qr_code),
-    path('decode/', decode_qr_code),
+    path('generate/', QRCodeGenerateView.as_view(), name="generate-qrcode"),
+    path('validate/', QRCodeValidateView.as_view(), name="validate-qrcode"),
 ]

@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     # Custom apps
     "accounts",
     "invite",
+    "qrcode",
     "profiles",
     "schedules",
 ]

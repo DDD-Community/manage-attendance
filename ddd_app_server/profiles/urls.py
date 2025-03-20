@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import ProfileDetailView
+from .views import ProfileDetailView, UserProfileDetailView
 
 # prefix = "profiles/"
 urlpatterns = [
-    path("", ProfileDetailView.as_view(), name='profile-detail'),
-    path("<uuid:user_id>/", ProfileDetailView.as_view(), name='profile-detail-with-id'),
+    # Profile endpoints
+    path('me/', ProfileDetailView.as_view(), name='profile-detail'),
+    path('<int:user_id>/', UserProfileDetailView.as_view(), name='user-profile-detail'),
 ]

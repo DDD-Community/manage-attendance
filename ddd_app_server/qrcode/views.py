@@ -1,9 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
-import qrcode
-import io
-import base64
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 from rest_framework import generics, permissions, status
@@ -20,17 +14,11 @@ class QRCodeGenerateView(APIView):
         user = request.user
         timestamp = now().isoformat()
         qr_data = f"{user.id}|{timestamp}"
-        
-        # QR 코드 생성
-        qr = qrcode.make(qr_data)
-        buffer = io.BytesIO()
-        qr.save(buffer, format="PNG")
-        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-        
+
         # 로그 저장
         QRLog.objects.create(user=user, qr_string=qr_data)
         
-        return Response({"qr_code": qr_base64, "qr_data": qr_data}, status=status.HTTP_201_CREATED)
+        return Response({"qr_data": qr_data}, status=status.HTTP_201_CREATED)
 
 # QR 코드 검증 뷰
 class QRCodeValidateView(APIView):
