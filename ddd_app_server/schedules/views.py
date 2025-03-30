@@ -7,13 +7,6 @@ from django.contrib.auth.models import Group
 from .models import Schedule, Attendance
 from .serializers import ScheduleSerializer, AttendanceSerializer
 
-# Custom Permission for Admins and Moderators
-class IsAdminOrModerator(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and (
-            request.user.is_staff or request.user.groups.filter(name="moderator").exists()
-        )
-
 class BaseResponseMixin:
     def create_response(self, code, message, data=None, status_code=status.HTTP_200_OK):
         return Response({
@@ -21,6 +14,13 @@ class BaseResponseMixin:
             "message": message,
             "data": data
         }, status=status_code)
+
+# Custom Permission for Admins and Moderators
+class IsAdminOrModerator(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.is_staff or request.user.groups.filter(name="moderator").exists()
+        )
 
 class ScheduleListView(generics.ListCreateAPIView, BaseResponseMixin):
     serializer_class = ScheduleSerializer
