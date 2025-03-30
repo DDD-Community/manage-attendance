@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "corsheaders",
     
+    "drf_yasg",
     "rest_framework",
     "rest_framework.authtoken",
     "rest_framework_simplejwt",
@@ -59,7 +60,6 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     # "allauth.socialaccount.providers.apple",
-    "drf_yasg",
 
     # Custom apps
     "accounts",
