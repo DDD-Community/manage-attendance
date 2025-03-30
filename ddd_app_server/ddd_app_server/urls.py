@@ -13,7 +13,7 @@ urlpatterns = [
     path("auth/", include('accounts.urls')),
     
     path("invite-code/", include('invites.urls')),
-    path("qrcode/", include('qrcode.urls')),
+    path("qrcodes/", include('qrcodes.urls')),
     path("profiles/", include('profiles.urls')),
     path("schedules/", include('schedules.urls')),
 ]
