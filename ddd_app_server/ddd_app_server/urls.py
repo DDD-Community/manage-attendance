@@ -12,7 +12,7 @@ urlpatterns = [
     path("health/", health_check),
     path("auth/", include('accounts.urls')),
     
-    path("invite-code/", include('invite.urls')),
+    path("invite-code/", include('invites.urls')),
     path("qrcode/", include('qrcode.urls')),
     path("profiles/", include('profiles.urls')),
     path("schedules/", include('schedules.urls')),
