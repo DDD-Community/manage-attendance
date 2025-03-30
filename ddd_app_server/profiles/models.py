@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from invite.models import InviteCode
+from invites.models import InviteCode
 
 
 class Profile(models.Model):

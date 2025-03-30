@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from profiles.models import Profile
-from invite.models import InviteCode
+from invites.models import InviteCode
 from django.utils import timezone
 
 User = get_user_model()
