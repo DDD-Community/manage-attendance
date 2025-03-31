@@ -1,12 +1,40 @@
 openapi: 3.0.0
 info:
-  title: DDD API
-  description: 사용자 등록, 출석 및 관리 API입니다.
-  version: 0.3.0
+  title: DDD Attendance Management API
+  version: 1.0.0
+  description: |
+    DDD 커뮤니티 출석 관리를 위한 API 서비스입니다.
+    
+    ## 주요 기능
+    - JWT 기반 인증
+    - 소셜 로그인 (Google, Kakao)
+    - QR 코드 생성 및 검증
+    - 프로필 관리
+    - 초대 시스템
+    - 일정 관리
+    
+    ## 응답 형식
+    모든 API 응답은 다음 형식을 따릅니다:
+    ```json
+    {
+      "code": 200,
+      "message": "작업 성공 메시지",
+      "data": { ... }
+    }
+    ```
+    
+    ## 에러 코드
+    - 200: 성공
+    - 201: 생성 성공
+    - 400: 잘못된 요청
+    - 401: 인증 실패
+    - 403: 권한 없음
+    - 404: 리소스 없음
+    - 500: 서버 에러
 
 servers:
-  - url: https://home.ufxpri.dev
-    description: 개발용 서버
+  - url: /api/v1
+    description: API v1 서버
 
 tags:
   - name: health-check
@@ -55,163 +83,10 @@ paths:
                         description: 요청 시각 (ISO8601 포맷, UTC)
                         example: "2024-10-06T12:34:56Z"
 
-  /auth/google/url/:
-    get:
-      tags:
-        - auth
-      summary: Generate Google Login URL
-      description: Endpoint to generate the Google login URL.
-      responses:
-        200:
-          description: Successfully generated the Google login URL.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  login_url:
-                    type: string
-                    example: "https://accounts.google.com/o/oauth2/auth"
-
-  /auth/google/login/:
+  /auth/login/:
     post:
-      tags:
-        - auth
-      summary: Login with Google
-      description: Login or register a user using Google auth.
-      requestBody:
-        description: The payload for logging in with Google.
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                access_token:
-                  type: string
-                  example: "your-google-access-token"
-      responses:
-        200:
-          description: Successfully logged in.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    example: "your-auth-token"
-        400:
-          description: Invalid access token or login failed.
-
-  /auth/google/callback/:
-    get:
-      tags:
-        - auth
-      summary: Google auth Callback
-      description: Handle the callback from Google after successful auth.
-      responses:
-        200:
-          description: Successfully logged in and received JWT.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                    example: "your-jwt-access-token"
-                  refresh_token:
-                    type: string
-                    example: "your-jwt-refresh-token"
-        400:
-          description: auth failed.
-
-  /auth/token/refresh/:
-    post:
-      tags:
-        - auth
-      summary: Refresh JWT
-      description: Refresh the JWT access token using the refresh token.
-      requestBody:
-        description: The payload for refreshing the access token.
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                refresh:
-                  type: string
-                  example: "your-jwt-refresh-token"
-      responses:
-        200:
-          description: Successfully refreshed the access token.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access:
-                    type: string
-                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM4NjcwNjg5LCJpYXQiOjE3Mzg1ODM5MzUsImp0aSI6ImY3MmU2MjhjNzM4YjQ2NzM4MWRkMjY3NWMwN2NkN2IzIiwidXNlcl9pZCI6Mn0.JixmiWoNJrQmNJSXju160MzIymQ50PuE3-oLlXCYBJg"
-                  access_expiration: 
-                    type: string
-                    example: "2025-02-04T12:04:49.565736Z"
-        400:
-          description: Invalid refresh token.
-
-  /auth/token/verify/:
-    post:
-      tags:
-        - auth
-      summary: Verify JWT
-      description: Verify the JWT access token and return the associated user ID.
-      requestBody:
-        description: The payload for verifying the JWT.
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  example: "your-jwt-access-token"
-      responses:
-        200:
-          description: Successfully verified the JWT and retrieved the user ID.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  empty:
-                    type: string
-        '401':
-          description: Token is invalid or expired.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  detail:
-                    type: string
-                    example: "Token is invalid or expired"
-                  code:
-                    type: string
-                    example: "token_not_valid"
-        400:
-          description: Invalid or expired JWT.
-
-  /invite-code/:
-    post:
-      tags:
-        - invite-code
-      summary: 초대코드 생성
-      description: 일반 유저 또는 운영진으로 등록할 수 있는 초대코드를 생성합니다.
-      security:
-        - bearerAuth: []
+      summary: 로그인
+      description: JWT 토큰을 사용한 로그인
       requestBody:
         required: true
         content:
@@ -219,394 +94,142 @@ paths:
             schema:
               type: object
               properties:
-                invite_type:
+                username:
                   type: string
-                  enum: [member, moderator]
-                  description: 초대코드 유형 (멤버 또는 운영진)
-                expire_time:
+                password:
                   type: string
-                  format: date-time
-                  description: 초대코드 만료 시각 (기본 일주일)
-                one_time_use:
-                  type: boolean
-                  default: false
-                  description: 초대 코드를 한 번만 사용 가능한 경우 (기본 false)
-              required:
-                - invite_type
       responses:
-        '201':
-          description: 초대코드가 성공적으로 생성되었습니다.
+        '200':
+          description: 로그인 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   code:
-                    type: number
-                  message:
-                    type: string
-                  data:
-                    $ref: '#/components/schemas/InviteCode'
-        '400':
-          description: 잘못된 요청 데이터
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: 인증 실패
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /invite-code/validation/:
-    post:
-      tags:
-        - invite-code
-      summary: 초대코드 검증
-      description: 사용자가 입력한 초대코드의 유효성을 검사합니다.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                invite_code:
-                  type: string
-                  description: 검증할 초대코드
-              required:
-                - invite_code
-      responses:
-        '200':
-          description: 초대코드가 유효함
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                  message:
-                    type: string
-                    default: "valid invite code."
-                  data:
-                    type: object
-                    properties:
-                      valid:
-                        type: boolean
-                        description: 초대코드의 유효성 여부.
-                      invite_type:
-                        type: string
-                        enum: [member, moderator]
-                        description: 초대 유형 (멤버 또는 운영진).
-        '400':
-          description: 잘못된 초대코드
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /users/:
-    post:
-      tags:
-        - user
-      summary: 신규 유저 등록
-      description: 초대코드를 사용하여 일반 유저 또는 운영진을 등록합니다.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                invite_code:
-                  type: string
-                  example: "1234"
-                  description: 등록에 사용할 초대코드
-                name:
-                  type: string
-                  example: "김디디"
-                  description: 유저의 이름
-                tags:
-                  type: array
-                  example: ["role:member", "position:designer", "team:ios2", "generation:11기"]
-                  items:
-                    type: string
-                    description: 사용자 태그
-              required:
-                - invite_code
-                - name
-      responses:
-        '201':
-          description: 유저가 성공적으로 등록되었습니다.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessResponse"
-        '400':
-          description: 잘못된 초대코드 또는 누락된 정보
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /users/{user_id}/:
-    get:
-      tags:
-        - user
-      summary: 유저 정보 조회 ("me" 사용 가능)
-      description: 인증된 사용자의 개인 정보를 조회합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: user_id
-          required: true
-          in: path
-          schema:
-            type: string
-          description: 조회할 유저의 ID (UUID 사용)
-      responses:
-        '200':
-          description: 개인 정보 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                  message:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                        example: "김디디"
-                        description: 유저 이름
-                      tags:
-                        type: array
-                        example: ["role:member", "position:designer", "team:ios2", "generation:11기"]
-                        items:
-                          type: string
-                          description: 사용자 태그
-        '401':
-          description: 인증 실패
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    
-    patch:
-      tags: 
-        - user
-      summary: 유저 정보 수정
-      description: 유저의 정보를 수정합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: user_id
-          required: true
-          in: path
-          schema:
-            type: string
-          description: 수정할 유저의 ID (UUID 사용)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "김디디"
-                  description: 유저의 이름
-                tags:
-                  type: array
-                  example: ["role:member", "position:designer", "team:ios2", "generation:11기"]
-                  items:
-                    type: string
-                    description: 사용자 태그
-      responses:
-        '200':
-          description: 개인정보 수정 완료
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessResponse"
-
-    delete:
-      tags:
-        - user
-      summary: 유저 탈퇴
-      description: 인증된 사용자의 유저 정보를 삭제합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: 삭제할 유저의 ID (UUID 사용)
-      responses:
-        '200':
-          description: 유저 탈퇴 성공
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessResponse"
-        '401':
-          description: 인증 실패
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '400':
-          description: 오류로 인한 삭제 실패
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /users/{user_id}/attendance/:
-    get:
-      tags:
-        - user
-      summary: 유저의 출석 정보 조회
-      description: 특정 유저의 출석 정보를 조회합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: 조회할 유저의 ID
-      responses:
-        '200':
-          description: 출석 정보 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                  message:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      start_time:
-                        type: string
-                        format: date-time
-                        description: 활동 시작 날짜 (ISO8601 포맷, UTC)
-                      end_time:
-                        type: string
-                        format: date-time
-                        description: 활동 종료 날짜 (ISO8601 포맷, UTC)
-                      attendance_count:
-                        type: integer
-                        description: 출석 횟수
-                      late_count:
-                        type: integer
-                        description: 지각 횟수
-                      absent_count:
-                        type: integer
-                        description: 결석 횟수
-                      schedules:
-                        type: array
-                        description: 참석 대상인 모든 스케쥴
-                        items:
-                          type: object
-                          properties:
-                            title:
-                              type: string
-                              example: "직군 세션2"
-                              description: 스케쥴 제목
-                            description:
-                              type: string
-                              example: "커리큘럼에 대한 설명 문구 작성"
-                              description: 스케쥴 설명 문구
-                            schedule_time:
-                              type: string
-                              format: date-time
-                              description: 스케쥴 시간 (ISO8601 포맷, UTC)
-                            attendance_status:
-                              type: string
-                              enum: [tbd, present, late, absent, exception]
-                              description: 출석 상태 (미정, 출석, 지각, 결석, 예외)
-                            note:
-                              type: string
-                              example: "군대 훈련으로 인한 결석 등..🧏"
-                              description: 출석 관련 비고
-        '401':
-          description: 인증 실패
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /qr/encode/:
-    post:
-      tags:
-        - qr
-      summary: QR 문자열 생성
-      description: 사용자 ID 및 타임스탬프를 포함하여, QR로 인코딩할 문자열을 생성합니다.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_id:
-                  type: string
-                  format: uuid
-                  description: 사용자의 ID (UUID)
-              required:
-                - user_id
-      responses:
-        '200':
-          description: QR 문자열이 성공적으로 생성되었습니다.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: number
+                    type: integer
                     example: 200
                   message:
                     type: string
-                    example: "QR encode success"
+                    example: "로그인 성공"
                   data:
                     type: object
                     properties:
-                      qr_string:
+                      access_token:
                         type: string
-                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                        description: QR 인코딩된 문자열(JWT 등)
+                      refresh_token:
+                        type: string
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /qr/decode/:
+  /auth/register/:
     post:
-      tags:
-        - qr
-      summary: QR 문자열 디코딩/검증
-      description: QR 문자열을 디코딩한 뒤, 포함된 시간 정보가 유효한지(만료 등)를 검증합니다.
+      summary: 회원가입
+      description: 새로운 사용자 등록
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "회원가입 성공"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /profiles/me/:
+    get:
+      summary: 내 프로필 조회
+      description: 현재 로그인한 사용자의 프로필 정보 조회
       security:
-        - bearerAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 프로필 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "프로필 조회 성공"
+                  data:
+                    $ref: '#/components/schemas/Profile'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /qrcodes/generate/:
+    post:
+      summary: QR 코드 생성
+      description: 새로운 QR 코드 문자열 생성
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: QR 코드 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "QR 코드 생성 성공"
+                  data:
+                    $ref: '#/components/schemas/QRCode'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /qrcodes/validate/:
+    post:
+      summary: QR 코드 검증
+      description: QR 코드 문자열의 유효성 검사
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -616,162 +239,69 @@ paths:
               properties:
                 qr_string:
                   type: string
-                  description: 디코딩할 QR 문자열(JWT 등)
-              required:
-                - qr_string
       responses:
         '200':
-          description: 유효한 QR 문자열로부터 정보를 성공적으로 디코딩했습니다.
+          description: QR 코드 검증 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   code:
-                    type: number
+                    type: integer
                     example: 200
                   message:
                     type: string
-                    example: "QR decode success"
+                    example: "QR 코드 검증 성공"
                   data:
                     type: object
                     properties:
-                      user_id:
-                        type: string
-                        format: uuid
-                        description: 디코딩된 사용자 ID (UUID)
-                      timestamp:
-                        type: string
-                        format: date-time
-                        description: QR 생성 시간 (ISO8601 포맷, UTC)
+                      valid:
+                        type: boolean
+                      user:
+                        $ref: '#/components/schemas/User'
         '400':
-          description: QR 문자열을 해석할 수 없음 (형식 오류 등)
+          description: 잘못된 요청
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
         '410':
-          description: QR 정보가 만료되었거나 사용 불가능함
+          description: QR 코드 만료
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
-          description: QR 문자열은 해독됐지만, 추가적으로 처리할 수 없는 상태 (기타 예외)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /schedules/:
     get:
-      tags:
-        - schedule
-      summary: 스케쥴 목록 조회
-      description: 스케쥴 목록을 조회합니다.
+      summary: 일정 목록 조회
+      description: 모든 일정 목록 조회
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
-          description: 스케쥴 목록
+          description: 일정 목록 조회 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   code:
-                    type: number
+                    type: integer
+                    example: 200
                   message:
                     type: string
+                    example: "일정 목록 조회 성공"
                   data:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                          description: 스케쥴 ID (UUID)
-                        title:
-                          type: string
-                          example: "직군 세션2"
-                          description: 스케쥴 제목
-                        description:
-                          type: string
-                          example: "커리큘럼에 대한 설명 문구 작성"
-                          description: 스케쥴 설명 문구
-                        start_time:
-                          type: string
-                          format: date-time
-                          description: 스케쥴 시작 시간 (ISO8601 포맷, UTC)
-                        end_time:
-                          type: string
-                          format: date-time
-                          description: 스케쥴 종료 시간 (ISO8601 포맷, UTC)
-
-  /schedules/{schedule_id}/:
-    get:
-      tags:
-        - schedule
-      summary: 스케쥴 조회 ("now" 사용 가능)
-      description: 특정 스케쥴의 세부 정보를 조회합니다.
+                      $ref: '#/components/schemas/Schedule'
+    post:
+      summary: 일정 생성
+      description: 새로운 일정 생성
       security:
-        - bearerAuth: []
-      parameters:
-        - name: schedule_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: 조회할 스케쥴의 ID (UUID 사용)
-      responses:
-        '200':
-          description: 스케쥴 세부 정보 조회
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                  message:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      title:
-                        type: string
-                        example: "직군 세션2"
-                        description: 스케쥴 제목
-                      description:
-                        type: string
-                        example: "커리큘럼에 대한 설명 문구 작성"
-                        description: 스케쥴 설명 문구
-                      start_time:
-                        type: string
-                        format: date-time
-                        description: 스케쥴 시작 시간 (ISO8601 포맷, UTC)
-                      end_time:
-                        type: string
-                        format: date-time
-                        description: 스케쥴 종료 시간 (ISO8601 포맷, UTC)
-
-    patch:
-      tags:
-        - schedule
-      summary: 스케쥴 수정
-      description: 특정 스케쥴의 정보를 수정합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: schedule_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: 수정할 스케쥴의 ID (UUID 사용)
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -781,249 +311,115 @@ paths:
               properties:
                 title:
                   type: string
-                  example: "직군 세션2"
-                  description: 스케쥴 제목
                 description:
                   type: string
-                  example: "커리큘럼에 대한 설명 문구 작성"
-                  description: 스케쥴 설명 문구
                 start_time:
                   type: string
                   format: date-time
-                  description: 스케쥴 시작 시간 (ISO8601 포맷, UTC)
                 end_time:
                   type: string
                   format: date-time
-                  description: 스케쥴 종료 시간 (ISO8601 포맷, UTC)
       responses:
-        '200':
-          description: 스케쥴 수정 성공
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessResponse"
-        '400':
-          description: 잘못된 요청 데이터
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    delete:
-      tags:
-        - schedule
-      summary: 스케쥴 삭제
-      description: 특정 스케쥴을 삭제합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: schedule_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: 삭제할 스케쥴의 ID (UUID 사용)
-      responses:
-        '200':
-          description: 스케쥴 삭제 성공
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessResponse"
-        '400':
-          description: 오류로 인한 삭제 실패
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /schedules/{schedule_id}/attendances/:
-    get:
-      tags:
-        - attendance
-      summary: 출석 현황 조회
-      description: 특정 스케줄의 출석 현황을 조회합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: schedule_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: 조회할 스케줄 ID
-      responses:
-        '200':
-          description: 출석 현황 조회 성공
+        '201':
+          description: 일정 생성 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   code:
-                    type: number
+                    type: integer
+                    example: 201
                   message:
                     type: string
+                    example: "일정 생성 성공"
                   data:
-                    type: object
-                    properties:
-                      attendance_count:
-                        type: integer
-                        description: 출석 인원
-                      late_count:
-                        type: integer
-                        description: 지각 인원
-                      absent_count:
-                        type: integer
-                        description: 결석 인원
-                      members:
-                        type: array
-                        description: 참석 대상인 모든 멤버
-                        items:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                              example: "김디디"
-                              description: 유저 이름
-                            tags:
-                              type: array
-                              example: ["role:member", "position:designer", "team:ios2", "generation:11기"]
-                              items:
-                                type: string
-                                description: 사용자 태그
-                            attendance_status:
-                              type: string
-                              enum: [tbd, present, late, absent, exception]
-                              description: 출석 상태 (미정, 출석, 지각, 결석, 예외)
-                            note:
-                              type: string
-                              example: "군대 훈련으로 인한 결석 등..🧏"
-                              description: 출석 관련 비고
-
-  /schedules/{schedule_id}/attendances/{user_id}/:
-    patch:
-      tags:
-        - attendance
-      summary: 출석 수정
-      description: 특정 스케줄의 출석을 수정합니다.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: schedule_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: 수정할 스케쥴의 ID (UUID 사용)
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: 수정할 멤버 ID (UUID 사용)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                attendance_status:
-                  type: string
-                  enum: [present, late, absent, unknown]
-                  description: 출석 상태 (출석, 지각, 결석, 정보 없음)
-                attendance_time:
-                  type: string
-                  format: date-time
-                  description: 출석이 등록된 시간 (ISO8601 포맷, UTC)
-                method:
-                  type: string
-                  enum: [qr, manual]
-                  description: 출석 등록 방법 (QR 코드 또는 수동 등록)
-                note:
-                  type: string
-                  example: "군대 훈련으로 인한 결석 등..🧏"
-                  description: 출석 관련 비고
-      responses:
-        '200':
-          description: 출석이 성공적으로 수정되었습니다.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessResponse"
-        '400':
-          description: 잘못된 요청 데이터
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        '401':
-          description: 인증 실패
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                    $ref: '#/components/schemas/Schedule'
 
 components:
   securitySchemes:
-    bearerAuth:
+    BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
 
   schemas:
-    InviteCode:
-      type: object
-      properties:
-        code:
-          type: string
-          description: 등록을 위한 초대코드
-        invite_type:
-          type: string
-          enum: [member, moderator]
-          description: 초대 유형 (일반 유저 또는 운영진)
-        created_at:
-          type: string
-          format: date-time
-          description: 생성 시각 (ISO8601 포맷, UTC)
-      required:
-        - code
-        - invite_type
-        - created_at
-    
-    SuccessResponse:
-      type: object
-      properties:
-        code:
-          type: number
-          description: 성공 코드
-        message:
-          type: string
-          example: "success"
-          description: 성공 메시지
-        data:
-          type: object
-
-    ErrorResponse:
+    Error:
       type: object
       properties:
         code:
           type: integer
-          description: 오류 코드
+          description: 에러 코드
         message:
           type: string
-          description: 오류 메시지
+          description: 에러 메시지
         data:
           type: object
-          properties:
-            request_id:
-              type: string
-              description: 요청 추적을 위한 고유 ID
-      required:
-        - code
-        - message
-        - data
+          description: 에러 상세 정보
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        profile:
+          $ref: '#/components/schemas/Profile'
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+        bio:
+          type: string
+        avatar:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    QRCode:
+      type: object
+      properties:
+        qr_string:
+          type: string
+          description: QR 코드 문자열
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        created_by:
+          $ref: '#/components/schemas/User'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
