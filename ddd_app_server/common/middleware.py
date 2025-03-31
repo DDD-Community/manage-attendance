@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from django.db import IntegrityError
 import logging
 
@@ -47,5 +48,5 @@ class StandardizedErrorMiddleware:
         return JsonResponse({
             "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
             "message": "서버 내부 오류가 발생했습니다.",
-            "data": str(exception) if request.debug else None
+            "data": str(exception) if settings.DEBUG else None
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 

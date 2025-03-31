@@ -33,8 +33,10 @@ info:
     - 500: 서버 에러
 
 servers:
-  - url: /api/v1
-    description: API v1 서버
+  - url: http://localhost:8000/api/v1
+    description: 로컬 개발 서버
+  - url: https://home.ufxpri.dev/api/v1
+    description: 프로덕션 서버
 
 tags:
   - name: health-check
