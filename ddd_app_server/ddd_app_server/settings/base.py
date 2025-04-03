@@ -118,11 +118,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 STATIC_URL = 'static/'
-STATIC_ROOT = '/tmp/static'
+STATIC_ROOT = '/var/www/static'
 
 # Media files
 MEDIA_URL = 'media/'
-MEDIA_ROOT = '/tmp/media'
+MEDIA_ROOT = '/var/www/media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -130,11 +130,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework settings
 REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        # 'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny', # Allow any user to access the API because we are using JWT
+    ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
@@ -219,7 +220,7 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {
             'access_type': 'online',
         },
-    },
+    }
 }
 
 

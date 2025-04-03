@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -12,6 +13,7 @@ class InviteCode(models.Model):
         ('moderator', '운영진'),
     ]
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     code = models.CharField(max_length=10, unique=True)
     invite_type = models.CharField(max_length=10, choices=INVITE_TYPE_CHOICES)
     used = models.BooleanField(default=False)
