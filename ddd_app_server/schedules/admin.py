@@ -10,7 +10,7 @@ class ScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
-    list_display = ('user', 'schedule', 'status', 'attendance_time', 'method')
+    list_display = ('user', 'schedule', 'status', 'updated_at', 'method')
     search_fields = ('user__username', 'schedule__title')
-    list_filter = ('status', 'method', 'attendance_time')
-    ordering = ('-attendance_time',)
+    list_filter = ('status', 'method', 'updated_at')
+    ordering = ('-updated_at',)
