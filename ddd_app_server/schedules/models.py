@@ -53,7 +53,7 @@ class Attendance(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances')
     schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name='attendances')
     status = models.CharField(max_length=10, choices=ATTENDANCE_STATUS_CHOICES, default='tbd')
-    attendance_time = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
     method = models.CharField(max_length=10, choices=METHOD_CHOICES, null=True, blank=True)
     note = models.TextField(blank=True, null=True)
 

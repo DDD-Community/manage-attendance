@@ -15,14 +15,14 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
 class AttendanceSerializer(serializers.ModelSerializer):
     schedule_title = serializers.ReadOnlyField(source='schedule.title')
-    user_name = serializers.ReadOnlyField(source='user.username')
     user_id = serializers.IntegerField(write_only=True, required=False)
+    user_name = serializers.ReadOnlyField(source='user.username')
 
     class Meta:
         model = Attendance
         fields = ['id', 'user', 'user_id', 'user_name', 'schedule', 'schedule_title', 
-                 'status', 'attendance_time', 'method', 'note']
-        read_only_fields = ['id', 'schedule', 'schedule_title', 'user_name', 'attendance_time']
+                 'status', 'updated_at', 'method', 'note']
+        read_only_fields = ['id', 'user', 'user_id', 'schedule', 'schedule_title', 'user_name', 'updated_at']
 
     def validate(self, data):
         request = self.context.get('request')
