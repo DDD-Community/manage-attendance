@@ -9,6 +9,7 @@ from .serializers import ScheduleSerializer, AttendanceSerializer
 from common.mixins import BaseResponseMixin
 from common.serializers import ErrorResponseSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from .mixins import CurrentScheduleMixin
 
 # 관리자나 모더레이터 전용 권한 클래스
 class IsAdminOrModerator(permissions.BasePermission):
@@ -107,14 +108,15 @@ class ScheduleListView(BaseResponseMixin, APIView):
         return self.create_response(400, "스케줄 생성에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 # ── ScheduleDetailView: 스케줄 상세 조회, 수정, 삭제 ──
-class ScheduleDetailView(BaseResponseMixin, APIView):
+class ScheduleDetailView(BaseResponseMixin, CurrentScheduleMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     serializer_class = ScheduleSerializer
 
     def get_object(self):
         schedule_id = self.kwargs.get('schedule_id')
-        return get_object_or_404(Schedule, id=schedule_id)
+        schedule = self.get_schedule(schedule_id)
+        return schedule
 
     @swagger_auto_schema(
         tags=["schedule"],
@@ -163,7 +165,7 @@ class ScheduleDetailView(BaseResponseMixin, APIView):
     #     return self.create_response(200, "스케줄이 성공적으로 삭제되었습니다.", None)
 
 # ── AttendanceListView: 출석 목록 조회 ──
-class AttendanceListView(BaseResponseMixin, APIView):
+class AttendanceListView(BaseResponseMixin, CurrentScheduleMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     serializer_class = AttendanceSerializer
@@ -176,28 +178,31 @@ class AttendanceListView(BaseResponseMixin, APIView):
     )
     def get(self, request, *args, **kwargs):
         schedule_id = self.kwargs.get('schedule_id')
+        schedule = self.get_schedule(schedule_id)
+        
         if request.user.is_staff or request.user.groups.filter(name="moderator").exists():
-            queryset = Attendance.objects.filter(schedule_id=schedule_id)
+            queryset = Attendance.objects.filter(schedule=schedule)
         else:
-            queryset = Attendance.objects.filter(schedule_id=schedule_id, user=request.user)
+            queryset = Attendance.objects.filter(schedule=schedule, user=request.user)
         serializer = self.serializer_class(queryset, many=True)
         return self.create_response(200, "출석 목록을 성공적으로 조회했습니다.", serializer.data)
 
 # ── AttendanceDetailView: 출석 상세 조회 및 업데이트 ──
-class AttendanceDetailView(BaseResponseMixin, APIView):
+class AttendanceDetailView(BaseResponseMixin, CurrentScheduleMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     serializer_class = AttendanceSerializer
 
     def get_object(self):
-        schedule_id = self.kwargs.get('schedule_id')
         user_id = self.kwargs.get('user_id')
+        schedule_id = self.kwargs.get('schedule_id')
+        schedule = self.get_schedule(schedule_id)
         # 관리자나 모더레이터는 user_id에 따른 출석 정보를 조회하고,
         # 일반 사용자는 자신의 출석 정보만 조회합니다.
         if self.request.user.is_staff or self.request.user.groups.filter(name="moderator").exists():
-            return get_object_or_404(Attendance, schedule_id=schedule_id, user_id=user_id)
+            return get_object_or_404(Attendance, schedule=schedule, user_id=user_id)
         else:
-            return get_object_or_404(Attendance, schedule_id=schedule_id, user_id=self.request.user.id)
+            return get_object_or_404(Attendance, schedule=schedule, user_id=self.request.user.id)
 
     @swagger_auto_schema(
         tags=["attendance"],
