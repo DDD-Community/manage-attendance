@@ -1,93 +1,73 @@
-import requests
-
-from urllib.parse import urljoin
-
-from django.urls import reverse
-from django.conf import settings
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
+import logging
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.apple.views import AppleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import render
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+from common.mixins import BaseResponseMixin
+from django.urls import reverse_lazy
+from rest_framework_simplejwt.tokens import RefreshToken
 
+logger = logging.getLogger(__name__)
 
-class GoogleLogin(SocialLoginView):
+class ProfileView(LoginRequiredMixin, View):
+    # LoginRequiredMixin이 인증되지 않은 사용자를 리디렉션할 URL
+    # allauth의 기본 로그인 URL 이름은 'account_login' 입니다.
+    # 만약 accounts.urls가 /api/accounts/ 에 마운트 되었다면,
+    # 실제 URL은 /api/accounts/login/ 이 됩니다.
+    login_url = reverse_lazy('account_login') # settings.LOGIN_URL 을 따르거나 직접 지정
+    template_name = 'account/profile.html'
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        logger.info(f"ProfileView: User {user.pk} ({user.get_username()}) accessed profile. JWTs generated.")
+
+        context = {
+            'user_object': user,
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+        }
+        return render(request, self.template_name, context)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GoogleLoginView(SocialLoginView):
     authentication_classes = []
     permission_classes = []
 
     adapter_class = GoogleOAuth2Adapter
-    callback_url = settings.GOOGLE_OAUTH_CALLBACK_URL
-    client_class = OAuth2Client
 
 
-class GoogleLoginCallback(APIView):
-    authentication_classes = []
-    permission_classes = []
-
-    def get(self, request, *args, **kwargs):
-        code = request.GET.get('code')
-        
-        if code is None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        
-        token_endpoint_url = urljoin("http://localhost:8000", reverse("google_login"))
-        response = requests.post(token_endpoint_url, data={"code": code})
-        
-        return Response(response.json(), status=status.HTTP_200_OK)
-
-
-class GoogleLoginUrl(APIView):
-    authentication_classes = []
-    permission_classes = []
-
-    def get(self, request, *args, **kwargs):
-        return Response({
-            "url": "https://accounts.google.com/o/oauth2/v2/auth?redirect_uri={google_callback_uri}&prompt=consent&response_type=code&client_id={google_client_id}&scope=openid%20email%20profile&access_type=offline".format(
-                google_callback_uri=settings.GOOGLE_OAUTH_CALLBACK_URL,
-                google_client_id=settings.GOOGLE_OAUTH_CLIENT_ID
-            )
-        }, status=status.HTTP_200_OK)
-
-
-class AppleLogin(SocialLoginView):
+@method_decorator(csrf_exempt, name='dispatch')
+class AppleLoginView(SocialLoginView):
     authentication_classes = []
     permission_classes = []
 
     adapter_class = AppleOAuth2Adapter
-    callback_url = settings.APPLE_OAUTH_CALLBACK_URL
-    client_class = OAuth2Client
+    
 
-
-class AppleLoginCallback(APIView):
-    authentication_classes = []
-    permission_classes = []
+class ObtainJWTFromSessionView(BaseResponseMixin, APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        code = request.GET.get('code')
+        user = request.user
+        refresh = RefreshToken.for_user(user)
 
-        if code is None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        token_endpoint_url = urljoin("http://localhost:8000", reverse("apple_login"))
-        response = requests.post(token_endpoint_url, data={"code": code})
-
-        return Response(response.json(), status=status.HTTP_200_OK)
-
-
-class AppleLoginUrl(APIView):
-    authentication_classes = []
-    permission_classes = []
-
-    def get(self, request, *args, **kwargs):
-        return Response({
-            "url": (
-                "https://appleid.apple.com/auth/authorize?"
-                "response_type=code&client_id={apple_client_id}&redirect_uri={apple_callback_uri}"
-                "&scope=name%20email&response_mode=query"
-            ).format(
-                apple_callback_uri=settings.APPLE_OAUTH_CALLBACK_URL,
-                apple_client_id=settings.APPLE_OAUTH_CLIENT_ID
-            )
-        }, status=status.HTTP_200_OK)
+        response_data = {
+            'refresh_token': str(refresh),
+            'access_token': str(refresh.access_token),
+            'user': {
+                'pk': user.pk,
+                'username': user.username,
+                'email': user.email,
+            }
+        }
+        return self.create_response(200, 'JWT tokens generated successfully.', response_data)

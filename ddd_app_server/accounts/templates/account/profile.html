@@ -1,0 +1,59 @@
+{% comment %} {% extends "base.html" %} {# 또는 여러분의 기본 템플릿 파일 #} {% endcomment %}
+{% load i18n %} {# 다국어 지원이 필요하다면 #}
+{% load account %} {# allauth 계정 관련 태그 (예: user_display) #}
+
+{% block head_title %}{% trans "User Profile" %}{% endblock %}
+
+{% block content %}
+  <h2>{% trans "User Profile" %}</h2>
+
+  {# {% user_display user_object as user_display_name %} #}
+  <p><strong>{% trans "Username" %}:</strong> {{ user_object.get_username }}</p>
+  <p><strong>{% trans "Email" %}:</strong> {{ user_object.email }}</p>
+
+  <hr>
+
+  <h3>JWT Tokens (API 접근용 - 주의해서 다루세요!)</h3>
+  <p>
+    <strong>Access Token:</strong><br>
+    <textarea id="accessToken" rows="6" style="width: 90%;" readonly>{{ access_token }}</textarea><br>
+    <button type="button" onclick="copyToken('accessToken')">액세스 토큰 복사</button>
+  </p>
+  <p>
+    <strong>Refresh Token:</strong><br>
+    <textarea id="refreshToken" rows="6" style="width: 90%;" readonly>{{ refresh_token }}</textarea><br>
+    <button type="button" onclick="copyToken('refreshToken')">리프레시 토큰 복사</button>
+  </p>
+
+  <p style="color: red; font-weight: bold;">
+    이 토큰들은 계정 접근 권한을 가집니다. 절대로 다른 사람과 공유하지 마세요.
+    이 페이지는 주로 개발/테스트 목적으로 토큰을 확인하기 위함입니다.
+    실제 SPA 또는 모바일 앱에서는 토큰을 프로그래밍 방식으로 안전하게 처리해야 합니다.
+  </p>
+
+  <hr>
+  <form method="post" action="{% url 'account_logout' %}">
+      {% csrf_token %}
+      <button type="submit">{% trans "Logout" %}</button>
+  </form>
+
+  <script>
+    function copyToken(elementId) {
+      var textArea = document.getElementById(elementId);
+      textArea.select();
+      try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? '성공' : '실패';
+        alert('토큰 복사 ' + msg);
+      } catch (err) {
+        alert('토큰 복사에 실패했습니다. 수동으로 복사해주세요.');
+      }
+      // 선택 해제 (선택적으로)
+      if (window.getSelection) {
+        window.getSelection().removeAllRanges();
+      } else if (document.selection) {
+        document.selection.empty();
+      }
+    }
+  </script>
+{% endblock %}
