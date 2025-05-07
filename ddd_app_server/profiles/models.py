@@ -14,7 +14,7 @@ class Profile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username}'s profile"
+        return f"{self.user.username}"
 
     class Meta:
         ordering = ['-created_at']

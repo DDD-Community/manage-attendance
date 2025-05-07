@@ -18,11 +18,15 @@ class ProfileSerializer(serializers.ModelSerializer):
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
+    is_staff = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'user', 'name', 'invite_code_id', 'role', 'team', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'name', 'invite_code_id', 'role', 'team', 'is_staff', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_is_staff(self, obj):
+        return obj.user.is_staff or obj.user.groups.filter(name="moderator").exists()
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

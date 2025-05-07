@@ -3,7 +3,7 @@ import datetime
 
 def health_check(request):
     response_data = {
-        'code': 0,
+        'code': 200,
         'message': 'healthy',
         'data': {
             'status': 'healthy',

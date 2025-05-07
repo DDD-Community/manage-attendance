@@ -48,8 +48,8 @@ class InviteCodeValidateRequestSerializer(serializers.Serializer):
 
 # 초대 코드 검증 뷰 using APIView
 class InviteCodeValidateView(BaseResponseMixin, APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    permission_classes = []
+    authentication_classes = []
 
     @swagger_auto_schema(
         tags=["invites"],

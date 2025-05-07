@@ -24,7 +24,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('health/', health_check),
     path('admin/', admin.site.urls),
-    path('auth/', include('accounts.urls')),
+    path('accounts/', include('accounts.urls')),
     
     # API v1
     path('api/v1/', include([

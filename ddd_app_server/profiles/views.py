@@ -7,10 +7,10 @@ from .serializers import ProfileSerializer
 from common.mixins import BaseResponseMixin
 from common.serializers import ErrorResponseSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .mixins import MyProfileMixin
+from .mixins import CurrentProfileMixin
 
 # 특정 사용자 프로필 조회 APIView
-class UserProfileDetailView(BaseResponseMixin, MyProfileMixin, APIView):
+class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -40,12 +40,8 @@ class UserProfileDetailView(BaseResponseMixin, MyProfileMixin, APIView):
         profile_id = self.kwargs.get('profile_id')
         profile = self.get_profile(profile_id)
 
-        # Check if the user is the owner
-        if not (request.user == profile.user):
-            return self.create_response(403, "프로필을 수정할 권한이 없습니다.", {}, status.HTTP_403_FORBIDDEN)
-
-        # Check if the user is a moderator
-        if not (request.user.is_staff or request.user.groups.filter(name="moderator").exists()):
+        # Check if the user is the owner or a moderator
+        if not ((request.user == profile.user) or (request.user.is_staff or request.user.groups.filter(name="moderator").exists())):
             return self.create_response(403, "프로필을 수정할 권한이 없습니다.", {}, status.HTTP_403_FORBIDDEN)
 
         serializer = ProfileSerializer(profile, data=request.data, context={'request': request}, partial=True)
