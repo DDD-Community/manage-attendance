@@ -1,13 +1,17 @@
 from rest_framework.views import APIView
 from rest_framework import permissions, status, serializers
-from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
-from .models import Profile
 from .serializers import ProfileSerializer
 from common.mixins import BaseResponseMixin
 from common.serializers import ErrorResponseSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .mixins import CurrentProfileMixin
+
+# 프로필 조회 성공 응답 Serializer
+class ProfileSuccesSerializer(serializers.Serializer):
+    code = serializers.IntegerField(default=200)
+    message = serializers.CharField(default="프로필 조회에 성공했습니다.")
+    data = ProfileSerializer()
 
 # 특정 사용자 프로필 조회 APIView
 class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
@@ -18,7 +22,10 @@ class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
         tags=["profiles"],
         operation_summary="프로필 조회",
         operation_description="프로필 정보를 조회합니다.",
-        responses={200: ProfileSerializer()}
+        responses={
+            200: ProfileSuccesSerializer,
+            400: ErrorResponseSerializer
+        },
     )
     def get(self, request, *args, **kwargs):
         profile_id = self.kwargs.get('profile_id')
@@ -32,7 +39,7 @@ class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
         operation_description="프로필 정보를 부분 업데이트합니다.",
         request_body=ProfileSerializer,
         responses={
-            200: ProfileSerializer(),
+            200: ProfileSuccesSerializer,
             400: ErrorResponseSerializer
         },
     )

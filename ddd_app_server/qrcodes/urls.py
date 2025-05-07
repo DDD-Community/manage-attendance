@@ -11,6 +11,6 @@ from .views import QRCodeGenerateView, QRCodeValidateView
 
 # prefix = "qrcode/"
 urlpatterns = [
-    path('generate/', QRCodeGenerateView.as_view(), name="generate-qrcode"),
+    path('', QRCodeGenerateView.as_view(), name="generate-qrcode"),
     path('validate/', QRCodeValidateView.as_view(), name="validate-qrcode"),
 ]
