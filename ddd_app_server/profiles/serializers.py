@@ -14,7 +14,6 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
@@ -22,8 +21,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['id', 'user', 'name', 'invite_code_id', 'role', 'team', 'is_staff', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'invite_code_id', 'role', 'team', 'is_staff', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'is_staff', 'updated_at']
 
     def get_is_staff(self, obj):
         return obj.user.is_staff or obj.user.groups.filter(name="moderator").exists()
