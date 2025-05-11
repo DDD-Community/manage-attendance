@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
+from schedules.models import Attendance
 from profiles.models import Profile
 from invites.models import InviteCode
 from django.utils import timezone
@@ -17,15 +18,45 @@ class ProfileSerializer(serializers.ModelSerializer):
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
+    cohort = serializers.CharField(required=False, allow_null=True)
     is_staff = serializers.SerializerMethodField()
+    attendance = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'name', 'invite_code_id', 'role', 'team', 'is_staff', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'invite_code_id', 'role', 'team', 'cohort', 'is_staff', 'created_at', 'updated_at', 'attendance']
         read_only_fields = ['id', 'created_at', 'is_staff', 'updated_at']
 
     def get_is_staff(self, obj):
         return obj.user.is_staff or obj.user.groups.filter(name="moderator").exists()
+    
+    def get_attendance(self, obj):
+        attendances = Attendance.objects.filter(user=obj.user)
+        if attendances.exists():
+            attendance_count = attendances.count()
+            
+            late_count = attendances.filter(status="late").count()
+            absent_count = attendances.filter(status="absent").count()
+            present_count = attendances.filter(status="present").count()
+            exception_count = attendances.filter(status="exception").count()
+            tbd_count = attendances.filter(status="tbd").count()
+            
+            return {
+                "attendance_count": attendance_count,
+                "late_count": late_count,
+                "absent_count": absent_count,
+                "present_count": present_count,
+                "exception_count": exception_count,
+                "tbd_count": tbd_count,
+            }
+        return {
+            "attendance_count": 0,
+            "late_count": 0,
+            "absent_count": 0,
+            "present_count": 0,
+            "exception_count": 0,
+            "tbd_count": 0,
+        }
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -38,6 +69,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Extract team from groups
         team_group = next((g for g in user_groups if g.name.startswith("team:")), None)
         representation['team'] = team_group.name.split(":", 1)[1] if team_group else None
+        
+        # Extract cohort from groups
+        cohort_group = next((g for g in user_groups if g.name.startswith("cohort:")), None)
+        representation['cohort'] = cohort_group.name.split(":", 1)[1] if cohort_group else None
         
         # Include invite_code_id if available
         representation['invite_code_id'] = instance.invite_code.id if instance.invite_code else None
@@ -82,6 +117,13 @@ class ProfileSerializer(serializers.ModelSerializer):
             if validated_data['team']:
                 team_group, _ = Group.objects.get_or_create(name=f"team:{validated_data['team']}")
                 request_user.groups.add(team_group)
+
+        # Update cohort group
+        if 'cohort' in validated_data:
+            request_user.groups.filter(name__startswith="cohort:").delete()
+            if validated_data['cohort']:
+                cohort_group, _ = Group.objects.get_or_create(name=f"cohort:{validated_data['cohort']}")
+                request_user.groups.add(cohort_group)
         
         instance.save()
         return instance

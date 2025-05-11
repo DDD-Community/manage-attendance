@@ -25,3 +25,9 @@ class CurrentUserMixin:
             return self.request.user
 
         return get_object_or_404(User, id=user_id)
+
+class CurrentScheduleAndUserMixin(CurrentScheduleMixin, CurrentUserMixin):
+    def get_schedule_and_user(self, schedule_id, user_id):
+        schedule = self.get_schedule(schedule_id)
+        user = self.get_user(user_id)
+        return schedule, user
