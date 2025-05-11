@@ -79,7 +79,7 @@ LOGGING = {
         #     'formatter': 'verbose',
         # },
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG', #'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },

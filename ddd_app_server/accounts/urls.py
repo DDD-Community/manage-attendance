@@ -2,13 +2,15 @@ from django.urls import path
 from django.urls import include
 from django.urls import re_path
 from .views import CheckEmailUsedView, ObtainJWTFromSessionView, ProfileView
+from rest_framework_simplejwt.views import TokenBlacklistView
 
 urlpatterns = [
     path("", include("dj_rest_auth.urls")),
     path("registration/", include("dj_rest_auth.registration.urls")),
+    path("token/blacklist/", TokenBlacklistView.as_view(), name="token_blacklist"),
     
     ## OAuth
-    path("", include("allauth.urls")),
+    path("oauth/", include("allauth.urls")),
     path("session-to-jwt/", ObtainJWTFromSessionView.as_view(), name="session-to-jwt"),
     
     
