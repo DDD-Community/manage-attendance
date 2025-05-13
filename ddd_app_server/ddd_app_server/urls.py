@@ -31,6 +31,7 @@ urlpatterns = [
         path('profiles/', include('profiles.urls')),
         path('qrcodes/', include('qrcodes.urls')),
         path('schedules/', include('schedules.urls')),
+        path('attendances/', include('attendances.urls')),
         path('invites/', include('invites.urls')),
     ])),
     
