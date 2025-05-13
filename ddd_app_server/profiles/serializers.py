@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
-from schedules.models import Attendance
 from profiles.models import Profile
 from invites.models import InviteCode
 from django.utils import timezone
@@ -15,49 +14,21 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class ProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
     cohort = serializers.CharField(required=False, allow_null=True)
     is_staff = serializers.SerializerMethodField()
-    attendance = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'name', 'invite_code_id', 'role', 'team', 'cohort', 'is_staff', 'created_at', 'updated_at', 'attendance']
-        read_only_fields = ['id', 'created_at', 'is_staff', 'updated_at']
+        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'cohort', 'is_staff', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user_id', 'created_at', 'is_staff', 'updated_at']
 
     def get_is_staff(self, obj):
         return obj.user.is_staff or obj.user.groups.filter(name="moderator").exists()
     
-    def get_attendance(self, obj):
-        attendances = Attendance.objects.filter(user=obj.user)
-        if attendances.exists():
-            attendance_count = attendances.count()
-            
-            late_count = attendances.filter(status="late").count()
-            absent_count = attendances.filter(status="absent").count()
-            present_count = attendances.filter(status="present").count()
-            exception_count = attendances.filter(status="exception").count()
-            tbd_count = attendances.filter(status="tbd").count()
-            
-            return {
-                "attendance_count": attendance_count,
-                "late_count": late_count,
-                "absent_count": absent_count,
-                "present_count": present_count,
-                "exception_count": exception_count,
-                "tbd_count": tbd_count,
-            }
-        return {
-            "attendance_count": 0,
-            "late_count": 0,
-            "absent_count": 0,
-            "present_count": 0,
-            "exception_count": 0,
-            "tbd_count": 0,
-        }
-
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         user_groups = instance.user.groups.all()
@@ -127,3 +98,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         
         instance.save()
         return instance
+
+
+class ProfileSummarySerializer(ProfileSerializer):
+    class Meta:
+        model = Profile
+        fields = ['name', 'role', 'team', 'cohort']
+        read_only_fields = fields
+

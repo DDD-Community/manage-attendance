@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     
     # Third party apps
+    # 'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
     'profiles',
     'qrcodes',
     'schedules',
+    'attendances',
     'invites',
 ]
 
