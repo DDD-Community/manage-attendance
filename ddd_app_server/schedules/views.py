@@ -47,7 +47,8 @@ class ScheduleListView(BaseResponseMixin, APIView):
         """,
         manual_parameters=[
             openapi.Parameter('group_id', openapi.IN_QUERY, description="필터링할 그룹의 ID", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('date', openapi.IN_QUERY, description="필터링할 날짜 (YYYY-MM-DD)", type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE)
+            openapi.Parameter('start_date', openapi.IN_QUERY, description="필터링할 시작 날짜 (YYYY-MM-DD)", type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
+            openapi.Parameter('end_date', openapi.IN_QUERY, description="필터링할 종료 날짜 (YYYY-MM-DD)", type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE)
         ],
         responses={
             200: ScheduleListResponseSerializer(),
@@ -56,7 +57,8 @@ class ScheduleListView(BaseResponseMixin, APIView):
     )
     def get(self, request, *args, **kwargs):
         group_id_filter = request.query_params.get('group_id')
-        date_filter_str = request.query_params.get('date')
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
 
         # 기본 쿼리셋 결정 (스태프 vs 일반 사용자)
         if request.user.is_staff:
@@ -64,19 +66,21 @@ class ScheduleListView(BaseResponseMixin, APIView):
             base_queryset = Schedule.objects.all()
         else:
             # 일반 사용자는 자신과 관련된 스케줄만 기본 대상으로 함
-            # base_queryset = Schedule.objects.filter(
-            #     Q(assigned_users=request.user) |
-            #     Q(assigned_users__username=request.user.username) |
-            #     Q(assigned_groups__in=request.user.groups.all()) # 그룹 필터링 방식 변경 (더 효율적일 수 있음)
-            # ).distinct()
             base_queryset = Schedule.objects.filter(group__in=request.user.groups.all())
         
-        target_date = None
-        if date_filter_str:
+        start_date = None
+        end_date = None
+        if start_date_str:
             try:
-                target_date = datetime.strptime(date_filter_str, '%Y-%m-%d').date()
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             except ValueError:
-                return self.create_response(400, "잘못된 날짜 형식입니다. 'YYYY-MM-DD' 형식을 사용해주세요.", None, status.HTTP_400_BAD_REQUEST)
+                return self.create_response(400, "잘못된 시작 날짜 형식입니다. 'YYYY-MM-DD' 형식을 사용해주세요.", None, status.HTTP_400_BAD_REQUEST)
+
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return self.create_response(400, "잘못된 종료 날짜 형식입니다. 'YYYY-MM-DD' 형식을 사용해주세요.", None, status.HTTP_400_BAD_REQUEST)
 
         filtered_queryset = base_queryset
         try:
@@ -85,14 +89,17 @@ class ScheduleListView(BaseResponseMixin, APIView):
                 filtered_queryset = filtered_queryset.filter(assigned_groups__id=int(group_id_filter))
 
             # 날짜 필터링
-            if target_date:
-                filtered_queryset = filtered_queryset.filter(start_time__date=target_date)
+            if start_date and end_date:
+                filtered_queryset = filtered_queryset.filter(start_time__date__range=(start_date, end_date))
+            elif start_date:
+                filtered_queryset = filtered_queryset.filter(start_time__date__gte=start_date)
+            elif end_date:
+                filtered_queryset = filtered_queryset.filter(start_time__date__lte=end_date)
 
         except ValueError:
-             return self.create_response(400, "잘못된 group_id 입니다.", None, status.HTTP_400_BAD_REQUEST)
+            return self.create_response(400, "잘못된 group_id 입니다.", None, status.HTTP_400_BAD_REQUEST)
 
-
-        schedules = filtered_queryset.distinct() 
+        schedules = filtered_queryset.distinct()
         serializer = self.serializer_class(schedules, many=True, context={"request": request})
         return self.create_response(200, "스케줄 목록을 성공적으로 조회했습니다.", serializer.data)
 

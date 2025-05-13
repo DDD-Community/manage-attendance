@@ -281,14 +281,14 @@ class AttendanceCountView(BaseResponseMixin, APIView):
             if schedule_id_filter:
                 filtered_queryset = filtered_queryset.filter(schedule_id=schedule_id_filter)
 
-            # Date Range Filters (apply to the attendance record's relevant date field)
+            # Date Range Filters (apply to the schedule's start_time and end_time fields)
             if start_date_str:
                 start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-                filtered_queryset = filtered_queryset.filter(**{f'start_time__date__gte': start_date})
+                filtered_queryset = filtered_queryset.filter(schedule__start_time__date__gte=start_date)
 
             if end_date_str:
                 end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-                filtered_queryset = filtered_queryset.filter(**{f'end_time__date__lte': end_date})
+                filtered_queryset = filtered_queryset.filter(schedule__end_time__date__lte=end_date)
 
         except ValueError as e:
             # Handle invalid integer conversion or date format
