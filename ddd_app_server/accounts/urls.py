@@ -1,8 +1,12 @@
 from django.urls import path
 from django.urls import include
-from django.urls import re_path
-from .views import CheckEmailUsedView, ObtainJWTFromSessionView, ProfileView
 from rest_framework_simplejwt.views import TokenBlacklistView
+from .views import (
+    CheckEmailUsedView,
+    ProfileView,
+    # ObtainJWTFromSessionView,
+    EmailTokenObtainPairView
+)
 
 urlpatterns = [
     path("", include("dj_rest_auth.urls")),
@@ -11,10 +15,10 @@ urlpatterns = [
     
     ## OAuth
     path("oauth/", include("allauth.urls")),
-    path("session-to-jwt/", ObtainJWTFromSessionView.as_view(), name="session-to-jwt"),
+    path('token/email/', EmailTokenObtainPairView.as_view(), name='token_obtain_email'),
+    # path("token/session/", ObtainJWTFromSessionView.as_view(), name="session-to-jwt"),
     
     
-    # 프로필 페이지 URL (allauth의 기본 프로필 이름과 일치시킬 수 있음)
     path("profile/", ProfileView.as_view(), name="account_profile"),
     
     
