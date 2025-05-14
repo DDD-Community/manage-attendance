@@ -164,17 +164,17 @@ class ScheduleDetailView(BaseResponseMixin, CurrentScheduleMixin, APIView):
             return self.create_response(200, "스케줄이 성공적으로 수정되었습니다.", serializer.data)
         return self.create_response(400, "스케줄 수정에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(
-        tags=["schedule"],
-        operation_summary="스케줄 삭제",
-        operation_description="특정 스케줄을 삭제합니다.",
-        responses={200: ScheduleDeleteResponseSerializer()}
-    )
-    def delete(self, request, schedule_id, *args, **kwargs):
-        # Check for admin or moderator permission manually
-        if not request.user.is_staff:
-            return self.create_response(403, "스케줄 삭제 권한이 없습니다.", None, status.HTTP_403_FORBIDDEN)
-        schedule = self.get_schedule(schedule_id)
-        schedule.delete()
-        return self.create_response(204, "스케줄이 성공적으로 삭제되었습니다.", None)
+    # @swagger_auto_schema(
+    #     tags=["schedule"],
+    #     operation_summary="스케줄 삭제",
+    #     operation_description="특정 스케줄을 삭제합니다.",
+    #     responses={200: ScheduleDeleteResponseSerializer()}
+    # )
+    # def delete(self, request, schedule_id, *args, **kwargs):
+    #     # Check for admin or moderator permission manually
+    #     if not request.user.is_staff:
+    #         return self.create_response(403, "스케줄 삭제 권한이 없습니다.", None, status.HTTP_403_FORBIDDEN)
+    #     schedule = self.get_schedule(schedule_id)
+    #     schedule.delete()
+    #     return self.create_response(204, "스케줄이 성공적으로 삭제되었습니다.", None)
 
