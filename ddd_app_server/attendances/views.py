@@ -186,23 +186,23 @@ class AttendanceDetailView(BaseResponseMixin, APIView):
         else:
             return self.create_response(400, "출석 수정에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(
-        tags=["attendance"],
-        operation_summary="출석 삭제",
-        operation_description="특정 출석을 삭제합니다.",
-        responses={
-            204: openapi.Response(description="출석 정보가 성공적으로 삭제되었습니다."),
-            403: ErrorResponseSerializer(),
-            404: ErrorResponseSerializer()
-        }
-    )
-    def delete(self, request, attendance_id, *args, **kwargs):
-        # Time constraint check is optional for delete, let's omit it here (check_time=False)
-        attendance = self.get_object_and_check_permission(request, attendance_id, check_time=False)
-        attendance.delete()
+    # @swagger_auto_schema(
+    #     tags=["attendance"],
+    #     operation_summary="출석 삭제",
+    #     operation_description="특정 출석을 삭제합니다.",
+    #     responses={
+    #         204: openapi.Response(description="출석 정보가 성공적으로 삭제되었습니다."),
+    #         403: ErrorResponseSerializer(),
+    #         404: ErrorResponseSerializer()
+    #     }
+    # )
+    # def delete(self, request, attendance_id, *args, **kwargs):
+    #     # Time constraint check is optional for delete, let's omit it here (check_time=False)
+    #     attendance = self.get_object_and_check_permission(request, attendance_id, check_time=False)
+    #     attendance.delete()
 
-        # Return 204 No Content (standard REST practice)
-        return self.create_response(204, "출석이 성공적으로 삭제되었습니다.", None)
+    #     # Return 204 No Content (standard REST practice)
+    #     return self.create_response(204, "출석이 성공적으로 삭제되었습니다.", None)
 
 
 class AttendanceCountView(BaseResponseMixin, APIView):
@@ -246,15 +246,7 @@ class AttendanceCountView(BaseResponseMixin, APIView):
         if request.user.is_staff:
             base_queryset = Attendance.objects.all()
         else:
-            # Regular users see their own attendance or attendance for schedules in their groups
-            user_groups = request.user.groups.all()
-            schedule_ids_for_user_groups = Schedule.objects.filter(
-                group__in=user_groups
-            ).values_list('id', flat=True)
-
-            base_queryset = Attendance.objects.filter(
-                Q(user=request.user) | Q(schedule_id__in=list(schedule_ids_for_user_groups))
-            ).distinct()
+            base_queryset = Attendance.objects.filter(user=request.user)
 
         filtered_queryset = base_queryset
 
@@ -263,10 +255,9 @@ class AttendanceCountView(BaseResponseMixin, APIView):
             # User ID Filter
             if user_id_filter:
                 user_id_to_filter = int(user_id_filter)
-                if not request.user.is_staff and user_id_to_filter != request.user.id:
-                    if not base_queryset.filter(user_id=user_id_to_filter).exists():
-                         return self.create_response(403, "You do not have permission to view counts for this user.", None, status.HTTP_403_FORBIDDEN)
-                filtered_queryset = filtered_queryset.filter(user_id=user_id_to_filter)
+                if (user_id_to_filter != request.user.id) and (not request.user.is_staff):
+                    return self.create_response(403, "You do not have permission to view counts for this user.", None, status.HTTP_403_FORBIDDEN)
+                filtered_queryset = filtered_queryset.filter(user__id=user_id_to_filter)
 
             # Group ID Filter
             if group_id_filter:
@@ -279,7 +270,7 @@ class AttendanceCountView(BaseResponseMixin, APIView):
 
             # Schedule ID Filter
             if schedule_id_filter:
-                filtered_queryset = filtered_queryset.filter(schedule_id=schedule_id_filter)
+                filtered_queryset = filtered_queryset.filter(schedule__id=schedule_id_filter)
 
             # Date Range Filters (apply to the schedule's start_time and end_time fields)
             if start_date_str:

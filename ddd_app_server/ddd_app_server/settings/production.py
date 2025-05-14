@@ -1,3 +1,4 @@
+import os
 from .base import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -70,30 +71,45 @@ LOGGING = {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
         },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
-        # 'file': {
-        #     'level': 'ERROR',
-        #     'class': 'logging.FileHandler',
-        #     'filename': '/var/log/django/error.log',
-        #     'formatter': 'verbose',
-        # },
         'console': {
-            'level': 'DEBUG', #'INFO',
+            'level': 'INFO',
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file_errors': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': '/app/logs/django_errors.log',
+            'formatter': 'verbose',
+        },
+        'file_general': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': '/app/logs/django_general.log',
             'formatter': 'verbose',
         },
     },
     'loggers': {
-        # 'django': {
-        #     'handlers': ['file', 'console'],
-        #     'level': 'ERROR',
-        #     'propagate': True,
-        # },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+        'django': {
+            'handlers': ['console', 'file_errors'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console', 'file_errors'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        '': {  # Root logger
+            'handlers': ['console', 'file_general', 'file_errors'],
+            'level': 'INFO',
+        },
     },
 }
 
@@ -111,4 +127,4 @@ LOGGING = {
 # # Session settings
 # SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 # SESSION_CACHE_ALIAS = 'default'
-# SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 1 week 
+# SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 1 week

@@ -47,8 +47,13 @@ class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
         profile_id = self.kwargs.get('profile_id')
         profile = self.get_profile(profile_id)
 
+
+        # Permission Check: Is the requester the owner or staff?
+        is_owner = (profile.user == request.user)
+        is_staff = request.user.is_staff
+
         # Check if the user is the owner or a moderator
-        if not ((request.user == profile.user) or (request.user.is_staff or request.user.groups.filter(name="moderator").exists())):
+        if not (is_owner or is_staff):
             return self.create_response(403, "프로필을 수정할 권한이 없습니다.", {}, status.HTTP_403_FORBIDDEN)
 
         serializer = ProfileSerializer(profile, data=request.data, context={'request': request}, partial=True)
