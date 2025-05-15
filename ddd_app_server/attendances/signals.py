@@ -19,7 +19,9 @@ def sync_attendance_on_user_groups_change(sender, instance, action, pk_set, **kw
 
         attendance_to_create = []
         for schedule in schedules_for_new_groups:
-            attendance_to_create.append(Attendance(user=user, schedule=schedule, status='tbd'))
+            is_staff = (user.is_staff or user.groups.filter(name="moderator").exists())
+            if not is_staff:
+                attendance_to_create.append(Attendance(user=user, schedule=schedule, status='tbd'))
         
         if attendance_to_create:
             Attendance.objects.bulk_create(attendance_to_create, ignore_conflicts=True)
@@ -62,7 +64,9 @@ def sync_attendance_on_schedule_group_change(sender, instance, created, **kwargs
         
         attendance_to_create = []
         for user in users_to_add_attendance:
-            attendance_to_create.append(Attendance(user=user, schedule=schedule, status='tbd'))
+            is_staff = (user.is_staff or user.groups.filter(name="moderator").exists())
+            if not is_staff:
+                attendance_to_create.append(Attendance(user=user, schedule=schedule, status='tbd'))
         
         if attendance_to_create:
             Attendance.objects.bulk_create(attendance_to_create, ignore_conflicts=True)

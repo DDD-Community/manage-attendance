@@ -29,6 +29,11 @@ def sync_attendance_for_group(modeladmin, request, queryset):
 
             created_for_this_schedule = 0
             for user in users_in_group:
+                # Skip staff users or users in the "moderator" group
+                is_staff = (user.is_staff or user.groups.filter(name="moderator").exists())
+                if is_staff:
+                    continue
+
                 # Use get_or_create to add attendance only if it doesn't exist
                 attendance, created = Attendance.objects.get_or_create(
                     user=user,
