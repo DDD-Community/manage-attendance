@@ -59,8 +59,10 @@ class AttendanceListView(BaseResponseMixin, APIView):
         user_id_filter = request.query_params.get('user_id')
         schedule_id_filter = request.query_params.get('schedule_id')
 
+        
         # 기본 쿼리셋: 스태프는 전체, 일반 사용자는 자신 것만
-        if request.user.is_staff:
+        is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
+        if is_staff:
             base_queryset = Attendance.objects.select_related('user', 'schedule').all() # Optimization
         else:
             base_queryset = Attendance.objects.select_related('user', 'schedule').filter(user=request.user)
@@ -74,7 +76,7 @@ class AttendanceListView(BaseResponseMixin, APIView):
             # User ID 필터링
             if user_id_filter:
                 user_id_to_filter = int(user_id_filter)
-                if request.user.is_staff:
+                if is_staff:
                     # 스태프는 모든 사용자로 필터링 가능
                     filtered_queryset = filtered_queryset.filter(user__id=user_id_to_filter)
                 else:
@@ -117,7 +119,7 @@ class AttendanceDetailView(BaseResponseMixin, APIView):
 
             # Permission Check: Is the requester the owner or staff?
             is_owner = (attendance.user == request.user)
-            is_staff = request.user.is_staff
+            is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
 
             if not (is_owner or is_staff):
                 raise permissions.PermissionDenied("이 출석 정보에 접근할 권한이 없습니다.")
@@ -243,7 +245,8 @@ class AttendanceCountView(BaseResponseMixin, APIView):
         end_date_str = request.query_params.get('end_date')
 
         # --- 2. Base Queryset based on Permissions ---
-        if request.user.is_staff:
+        is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
+        if is_staff:
             base_queryset = Attendance.objects.all()
         else:
             base_queryset = Attendance.objects.filter(user=request.user)
@@ -255,7 +258,7 @@ class AttendanceCountView(BaseResponseMixin, APIView):
             # User ID Filter
             if user_id_filter:
                 user_id_to_filter = int(user_id_filter)
-                if (user_id_to_filter != request.user.id) and (not request.user.is_staff):
+                if (user_id_to_filter != request.user.id) and (not is_staff):
                     return self.create_response(403, "You do not have permission to view counts for this user.", None, status.HTTP_403_FORBIDDEN)
                 filtered_queryset = filtered_queryset.filter(user__id=user_id_to_filter)
 
