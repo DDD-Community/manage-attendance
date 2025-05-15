@@ -1,11 +1,14 @@
-from rest_framework.views import APIView
+import logging
 from rest_framework import permissions, status, serializers
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_yasg.utils import swagger_auto_schema
-from .serializers import ProfileSerializer
 from common.mixins import BaseResponseMixin
 from common.serializers import ErrorResponseSerializer
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from .mixins import CurrentProfileMixin
+from .serializers import ProfileSerializer
+
+logger = logging.getLogger(__name__)
 
 # 프로필 조회 성공 응답 Serializer
 class ProfileSuccesSerializer(serializers.Serializer):
@@ -60,5 +63,7 @@ class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
         if serializer.is_valid():
             serializer.save()
             return self.create_response(200, "프로필이 성공적으로 수정되었습니다.", serializer.data)
-        return self.create_response(400, "프로필 수정에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.error(f"Serializer errors: {serializer.errors}")
+            return self.create_response(400, "프로필 수정에 실패했습니다.", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
