@@ -61,7 +61,8 @@ class ScheduleListView(BaseResponseMixin, APIView):
         end_date_str = request.query_params.get('end_date')
 
         # 기본 쿼리셋 결정 (스태프 vs 일반 사용자)
-        if request.user.is_staff:
+        is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
+        if is_staff:
             # 스태프 사용자는 모든 스케줄을 기본 대상으로 함
             base_queryset = Schedule.objects.all()
         else:
@@ -116,7 +117,8 @@ class ScheduleListView(BaseResponseMixin, APIView):
     )
     def post(self, request, *args, **kwargs):
         # Check for admin or moderator permission manually
-        if not request.user.is_staff:
+        is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
+        if not is_staff:
             return self.create_response(403, "스케줄 생성 권한이 없습니다.", None, status.HTTP_403_FORBIDDEN)
         
         serializer = self.serializer_class(data=request.data)
@@ -155,7 +157,8 @@ class ScheduleDetailView(BaseResponseMixin, CurrentScheduleMixin, APIView):
     )
     def patch(self, request, schedule_id, *args, **kwargs):
         # Check for admin or moderator permission manually
-        if not request.user.is_staff:
+        is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
+        if not is_staff:
             return self.create_response(403, "스케줄 수정 권한이 없습니다.", None, status.HTTP_403_FORBIDDEN)
         schedule = self.get_schedule(schedule_id)
         serializer = self.serializer_class(schedule, data=request.data, partial=True)
@@ -172,7 +175,8 @@ class ScheduleDetailView(BaseResponseMixin, CurrentScheduleMixin, APIView):
     # )
     # def delete(self, request, schedule_id, *args, **kwargs):
     #     # Check for admin or moderator permission manually
-    #     if not request.user.is_staff:
+    #     is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
+    #     if not is_staff:
     #         return self.create_response(403, "스케줄 삭제 권한이 없습니다.", None, status.HTTP_403_FORBIDDEN)
     #     schedule = self.get_schedule(schedule_id)
     #     schedule.delete()

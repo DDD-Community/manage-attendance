@@ -53,7 +53,7 @@ class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
 
         # Permission Check: Is the requester the owner or staff?
         is_owner = (profile.user == request.user)
-        is_staff = request.user.is_staff
+        is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
 
         # Check if the user is the owner or a moderator
         if not (is_owner or is_staff):
