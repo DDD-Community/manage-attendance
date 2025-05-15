@@ -49,6 +49,7 @@ class AttendanceListView(BaseResponseMixin, APIView):
         manual_parameters=[
             openapi.Parameter('user_id', openapi.IN_QUERY, description="필터링할 사용자의 ID", type=openapi.TYPE_INTEGER),
             openapi.Parameter('schedule_id', openapi.IN_QUERY, description="필터링할 스케줄의 ID", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('team', openapi.IN_QUERY, description="팀 이름", type=openapi.TYPE_STRING),
         ],
         responses={
             200: AttendanceListResponseSerializer(),
@@ -58,8 +59,9 @@ class AttendanceListView(BaseResponseMixin, APIView):
     def get(self, request, *args, **kwargs):
         user_id_filter = request.query_params.get('user_id')
         schedule_id_filter = request.query_params.get('schedule_id')
+        team_filter = request.query_params.get('team')
 
-        
+
         # 기본 쿼리셋: 스태프는 전체, 일반 사용자는 자신 것만
         is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
         if is_staff:
@@ -83,6 +85,10 @@ class AttendanceListView(BaseResponseMixin, APIView):
                     # 일반 사용자는 오직 자신의 ID로만 필터링 가능 (사실상 base_queryset 에서 이미 처리됨)
                     if user_id_to_filter != request.user.id:
                          return self.create_response(403, "다른 사용자의 출석 목록을 조회할 권한이 없습니다.", None, status.HTTP_403_FORBIDDEN)
+
+            # Team 필터링
+            if team_filter:
+                filtered_queryset = filtered_queryset.filter(user__groups__name=f"team:{team_filter}")
 
         except ValueError:
             return self.create_response(400, "잘못된 user_id 또는 schedule_id 형식입니다.", None, status.HTTP_400_BAD_REQUEST)
