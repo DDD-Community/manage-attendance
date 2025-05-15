@@ -11,7 +11,7 @@ class Schedule(models.Model):
     start_time = models.DateTimeField(help_text="The date and time when the schedule starts.")
     end_time = models.DateTimeField(help_text="The date and time when the schedule ends.")
     created_at = models.DateTimeField(auto_now_add=True, editable=False, help_text="Timestamp when the schedule was created.")
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='schedules', help_text="The group to which this schedule is assigned.")
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, related_name='schedules', help_text="The group to which this schedule is assigned.")
 
     class Meta:
         ordering = ['start_time', 'title']
