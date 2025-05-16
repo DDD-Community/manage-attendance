@@ -50,6 +50,8 @@ class AttendanceListView(BaseResponseMixin, APIView):
             openapi.Parameter('user_id', openapi.IN_QUERY, description="필터링할 사용자의 ID", type=openapi.TYPE_INTEGER),
             openapi.Parameter('schedule_id', openapi.IN_QUERY, description="필터링할 스케줄의 ID", type=openapi.TYPE_INTEGER),
             openapi.Parameter('team', openapi.IN_QUERY, description="팀 이름", type=openapi.TYPE_STRING),
+            openapi.Parameter('start_date', openapi.IN_QUERY, description="시작 날짜 (YYYY-MM-DD)", type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
+            openapi.Parameter('end_date', openapi.IN_QUERY, description="종료 날짜 (YYYY-MM-DD)", type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
         ],
         responses={
             200: AttendanceListResponseSerializer(),
@@ -60,6 +62,8 @@ class AttendanceListView(BaseResponseMixin, APIView):
         user_id_filter = request.query_params.get('user_id')
         schedule_id_filter = request.query_params.get('schedule_id')
         team_filter = request.query_params.get('team')
+        start_date_filter = request.query_params.get('start_date')
+        end_date_filter = request.query_params.get('end_date')
 
 
         # 기본 쿼리셋: 스태프는 전체, 일반 사용자는 자신 것만
@@ -89,6 +93,14 @@ class AttendanceListView(BaseResponseMixin, APIView):
             # Team 필터링
             if team_filter:
                 filtered_queryset = filtered_queryset.filter(user__groups__name=f"team:{team_filter}")
+            
+            # 날짜 필터링
+            if start_date_filter:
+                start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+                filtered_queryset = filtered_queryset.filter(schedule__start_time__date__gte=start_date)
+            if end_date_filter:
+                end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+                filtered_queryset = filtered_queryset.filter(schedule__end_time__date__lte=end_date)
 
         except ValueError:
             return self.create_response(400, "잘못된 user_id 또는 schedule_id 형식입니다.", None, status.HTTP_400_BAD_REQUEST)

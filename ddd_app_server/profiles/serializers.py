@@ -18,12 +18,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
-    cohort = serializers.CharField(required=False, allow_null=True)
+    cohort_group = serializers.CharField(required=False, allow_null=True)
     is_staff = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'cohort', 'is_staff', 'created_at', 'updated_at']
+        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'cohort', 'cohort_group', 'is_staff', 'created_at', 'updated_at']
         read_only_fields = ['id', 'user_id', 'created_at', 'is_staff', 'updated_at']
 
     def get_is_staff(self, obj):
@@ -43,7 +43,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         
         # Extract cohort from groups
         cohort_group = next((g for g in user_groups if g.name.startswith("cohort:")), None)
-        representation['cohort'] = cohort_group.name.split(":", 1)[1] if cohort_group else None
+        representation['cohort_group'] = cohort_group.name.split(":", 1)[1] if cohort_group else None
         
         # Include invite_code_id if available
         representation['invite_code_id'] = instance.invite_code.id if instance.invite_code else None
@@ -90,10 +90,10 @@ class ProfileSerializer(serializers.ModelSerializer):
                 request_user.groups.add(team_group)
 
         # Update cohort group
-        if 'cohort' in validated_data:
+        if 'cohort_group' in validated_data:
             request_user.groups.filter(name__startswith="cohort:").delete()
-            if validated_data['cohort']:
-                cohort_group, _ = Group.objects.get_or_create(name=f"cohort:{validated_data['cohort']}")
+            if validated_data['cohort_group']:
+                cohort_group, _ = Group.objects.get_or_create(name=f"cohort:{validated_data['cohort_group']}")
                 request_user.groups.add(cohort_group)
         
         instance.save()

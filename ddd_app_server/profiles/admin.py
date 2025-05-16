@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile
+from .models import Profile, Cohort
 from django.contrib.auth.models import Group
 
 @admin.action(description='Assign "cohort:12" to selected profiles')
@@ -14,3 +14,4 @@ class ProfileAdmin(admin.ModelAdmin):
     actions = [assign_cohort_12]
 
 admin.site.register(Profile, ProfileAdmin)
+admin.site.register(Cohort)
