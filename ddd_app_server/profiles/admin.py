@@ -13,5 +13,9 @@ class ProfileAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'user__group__name')
     actions = [assign_cohort_12]
 
+class CohortAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'description', 'created_at')
+    search_fields = ('name',)
+
 admin.site.register(Profile, ProfileAdmin)
-admin.site.register(Cohort)
+admin.site.register(Cohort, CohortAdmin)

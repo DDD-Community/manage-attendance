@@ -10,7 +10,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     name = models.CharField(max_length=255)
     invite_code = models.ForeignKey(InviteCode, on_delete=models.SET_NULL, null=True, blank=True, related_name='profiles')
-    cohort = models.ForeignKey('Cohort', on_delete=models.SET_NULL, null=True, blank=True, related_name='profiles')
+    cohort_id = models.ForeignKey('Cohort', on_delete=models.SET_NULL, null=True, blank=True, related_name='profiles')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
