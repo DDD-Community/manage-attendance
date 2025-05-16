@@ -68,20 +68,6 @@ class ScheduleListView(BaseResponseMixin, APIView):
         else:
             # 일반 사용자는 자신과 관련된 스케줄만 기본 대상으로 함
             base_queryset = Schedule.objects.filter(group__in=request.user.groups.all())
-        
-        start_date = None
-        end_date = None
-        if start_date_str:
-            try:
-                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                return self.create_response(400, "잘못된 시작 날짜 형식입니다. 'YYYY-MM-DD' 형식을 사용해주세요.", None, status.HTTP_400_BAD_REQUEST)
-
-        if end_date_str:
-            try:
-                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                return self.create_response(400, "잘못된 종료 날짜 형식입니다. 'YYYY-MM-DD' 형식을 사용해주세요.", None, status.HTTP_400_BAD_REQUEST)
 
         filtered_queryset = base_queryset
         try:
@@ -90,11 +76,11 @@ class ScheduleListView(BaseResponseMixin, APIView):
                 filtered_queryset = filtered_queryset.filter(assigned_groups__id=int(group_id_filter))
 
             # 날짜 필터링
-            if start_date and end_date:
-                filtered_queryset = filtered_queryset.filter(start_time__date__range=(start_date, end_date))
-            elif start_date:
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
                 filtered_queryset = filtered_queryset.filter(start_time__date__gte=start_date)
-            elif end_date:
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
                 filtered_queryset = filtered_queryset.filter(start_time__date__lte=end_date)
 
         except ValueError:
