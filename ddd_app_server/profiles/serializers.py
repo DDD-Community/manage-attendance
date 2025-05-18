@@ -18,12 +18,14 @@ class ProfileSerializer(serializers.ModelSerializer):
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
+    crew = serializers.CharField(required=False, allow_null=True)
+    
     cohort = serializers.CharField(required=False, allow_null=True)
     is_staff = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'cohort', 'cohort_id', 'is_staff', 'created_at', 'updated_at']
+        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'crew', 'cohort', 'cohort_id', 'is_staff', 'created_at', 'updated_at']
         read_only_fields = ['id', 'user_id', 'created_at', 'is_staff', 'updated_at']
 
     def get_is_staff(self, obj):
@@ -40,6 +42,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Extract team from groups
         team_group = next((g for g in user_groups if g.name.startswith("team:")), None)
         representation['team'] = team_group.name.split(":", 1)[1] if team_group else None
+        
+        # Extract crew from groups
+        crew_group = next((g for g in user_groups if g.name.startswith("crew:")), None)
+        representation['crew'] = crew_group.name.split(":", 1)[1] if crew_group else None
         
         # Extract cohort from groups
         cohort = next((g for g in user_groups if g.name.startswith("cohort:")), None)
@@ -88,6 +94,13 @@ class ProfileSerializer(serializers.ModelSerializer):
             if validated_data['team']:
                 team_group, _ = Group.objects.get_or_create(name=f"team:{validated_data['team']}")
                 request_user.groups.add(team_group)
+
+        # Update crew group
+        if 'crew' in validated_data:
+            request_user.groups.filter(name__startswith="crew:").delete()
+            if validated_data['crew']:
+                crew_group, _ = Group.objects.get_or_create(name=f"crew:{validated_data['crew']}")
+                request_user.groups.add(crew_group)
 
         # Update cohort group
         if 'cohort' in validated_data:
