@@ -19,13 +19,13 @@ class ProfileSerializer(serializers.ModelSerializer):
     role = serializers.CharField(required=False, allow_null=True)
     team = serializers.CharField(required=False, allow_null=True)
     crew = serializers.CharField(required=False, allow_null=True)
-    
+    moderator_role = serializers.CharField(required=False, allow_null=True)
     cohort = serializers.CharField(required=False, allow_null=True)
     is_staff = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'crew', 'cohort', 'cohort_id', 'is_staff', 'created_at', 'updated_at']
+        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'crew', 'moderator_role', 'cohort', 'cohort_id', 'is_staff', 'created_at', 'updated_at']
         read_only_fields = ['id', 'user_id', 'created_at', 'is_staff', 'updated_at']
 
     def get_is_staff(self, obj):
@@ -47,6 +47,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         # TODO i've replaced crew with team in the serializer, but we need to keep the crew group for now
         crew_group = next((g for g in user_groups if g.name.startswith("team:")), None)
         representation['crew'] = crew_group.name.split(":", 1)[1] if crew_group else None
+
+        # Extract moderator_role from groups
+        moderator_group = next((g for g in user_groups if g.name.startswith("moderator_role:")), None)
+        representation['moderator_role'] = moderator_group.name.split(":", 1)[1] if moderator_group else None
         
         # Extract cohort from groups
         cohort = next((g for g in user_groups if g.name.startswith("cohort:")), None)
@@ -103,6 +107,13 @@ class ProfileSerializer(serializers.ModelSerializer):
             if validated_data['crew']:
                 crew_group, _ = Group.objects.get_or_create(name=f"team:{validated_data['crew']}")
                 request_user.groups.add(crew_group)
+
+        # Update moderator_role group
+        if 'moderator_role' in validated_data:
+            request_user.groups.filter(name__startswith="moderator_role:").delete()
+            if validated_data['moderator_role']:
+                moderator_group, _ = Group.objects.get_or_create(name=f"moderator_role:{validated_data['moderator_role']}")
+                request_user.groups.add(moderator_group)
 
         # Update cohort group
         # TODO remove cohort group from groups and replace it with cohort data model
