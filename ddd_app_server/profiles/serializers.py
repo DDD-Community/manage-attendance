@@ -44,7 +44,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         representation['team'] = team_group.name.split(":", 1)[1] if team_group else None
         
         # Extract crew from groups
-        crew_group = next((g for g in user_groups if g.name.startswith("crew:")), None)
+        # TODO i've replaced crew with team in the serializer, but we need to keep the crew group for now
+        crew_group = next((g for g in user_groups if g.name.startswith("team:")), None)
         representation['crew'] = crew_group.name.split(":", 1)[1] if crew_group else None
         
         # Extract cohort from groups
@@ -96,13 +97,15 @@ class ProfileSerializer(serializers.ModelSerializer):
                 request_user.groups.add(team_group)
 
         # Update crew group
+        # TODO i've replaced crew with team in the serializer, but we need to keep the crew group for now
         if 'crew' in validated_data:
-            request_user.groups.filter(name__startswith="crew:").delete()
+            request_user.groups.filter(name__startswith="team:").delete()
             if validated_data['crew']:
-                crew_group, _ = Group.objects.get_or_create(name=f"crew:{validated_data['crew']}")
+                crew_group, _ = Group.objects.get_or_create(name=f"team:{validated_data['crew']}")
                 request_user.groups.add(crew_group)
 
         # Update cohort group
+        # TODO remove cohort group from groups and replace it with cohort data model
         if 'cohort' in validated_data:
             request_user.groups.filter(name__startswith="cohort:").delete()
             request_user.profile.cohort = None
