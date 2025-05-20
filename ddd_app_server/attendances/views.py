@@ -48,7 +48,7 @@ class AttendanceListView(BaseResponseMixin, APIView):
         """,
         manual_parameters=[
             openapi.Parameter('user_id', openapi.IN_QUERY, description="필터링할 사용자의 ID", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('schedule_id', openapi.IN_QUERY, description="필터링할 스케줄의 ID", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('schedule_id', openapi.IN_QUERY, description="필터링할 스케줄의 ID", type=openapi.TYPE_STRING),
             openapi.Parameter('team', openapi.IN_QUERY, description="팀 이름", type=openapi.TYPE_STRING),
             openapi.Parameter('start_date', openapi.IN_QUERY, description="시작 날짜 (YYYY-MM-DD)", type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
             openapi.Parameter('end_date', openapi.IN_QUERY, description="종료 날짜 (YYYY-MM-DD)", type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
@@ -77,7 +77,7 @@ class AttendanceListView(BaseResponseMixin, APIView):
         try:
             # Schedule ID 필터링 (모든 사용자 가능)
             if schedule_id_filter:
-                filtered_queryset = filtered_queryset.filter(schedule__id=int(schedule_id_filter))
+                filtered_queryset = filtered_queryset.filter(schedule__id=schedule_id_filter)
 
             # User ID 필터링
             if user_id_filter:
