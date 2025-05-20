@@ -26,9 +26,17 @@ def assign_random_group(modeladmin, request, queryset):
         profile.user.groups.add(random_cohort_group)
 
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'name', 'created_at')
-    search_fields = ('user__username', 'user__group__name')
+    list_display = ('user_id', 'user', 'email', 'name', 'created_at')
+    search_fields = ('user__username', 'user__email', 'user__groups__name')
     actions = [assign_cohort_12, assign_random_group]
+
+    @admin.display(description='User ID')
+    def user_id(self, obj):
+        return obj.user.id
+
+    @admin.display(description='Email')
+    def email(self, obj):
+        return obj.user.email
 
 class CohortAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'description', 'created_at')
