@@ -65,7 +65,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         request_user = self.context['request'].user
         
         # Update name if provided
-        if 'name' in validated_data:
+        if 'name' in validated_data and validated_data['name'] is not None and validated_data['name'] != "":
             instance.name = validated_data['name']
         
         # Update invite code if provided
@@ -87,14 +87,14 @@ class ProfileSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"invite_code_id": "Invalid invite code."})
         
         # Update role group
-        if 'role' in validated_data:
+        if 'role' in validated_data and validated_data['role'] is not None and validated_data['role'] != "":
             request_user.groups.filter(name__startswith="role:").delete()
             if validated_data['role']:
                 role_group, _ = Group.objects.get_or_create(name=f"role:{validated_data['role']}")
                 request_user.groups.add(role_group)
         
         # Update team group
-        if 'team' in validated_data:
+        if 'team' in validated_data and validated_data['team'] is not None and validated_data['team'] != "":
             request_user.groups.filter(name__startswith="team:").delete()
             if validated_data['team']:
                 team_group, _ = Group.objects.get_or_create(name=f"team:{validated_data['team']}")
@@ -102,14 +102,14 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         # Update crew group
         # TODO i've replaced crew with team in the serializer, but we need to keep the crew group for now
-        if 'crew' in validated_data:
+        if 'crew' in validated_data and validated_data['crew'] is not None and validated_data['crew'] != "":
             request_user.groups.filter(name__startswith="team:").delete()
             if validated_data['crew']:
                 crew_group, _ = Group.objects.get_or_create(name=f"team:{validated_data['crew']}")
                 request_user.groups.add(crew_group)
 
         # Update responsibility group (was moderator_role)
-        if 'responsibility' in validated_data:
+        if 'responsibility' in validated_data and validated_data['responsibility'] is not None and validated_data['responsibility'] != "":
             request_user.groups.filter(name__startswith="responsibility:").delete()
             if validated_data['responsibility']:
                 responsibility_group, _ = Group.objects.get_or_create(name=f"responsibility:{validated_data['responsibility']}")
@@ -117,7 +117,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         # Update cohort group
         # TODO remove cohort group from groups and replace it with cohort data model
-        if 'cohort' in validated_data:
+        if 'cohort' in validated_data and validated_data['cohort'] is not None and validated_data['cohort'] != "":
             request_user.groups.filter(name__startswith="cohort:").delete()
             request_user.profile.cohort = None
             if validated_data['cohort']:
