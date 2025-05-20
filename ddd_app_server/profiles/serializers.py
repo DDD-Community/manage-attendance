@@ -57,7 +57,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         representation['cohort'] = cohort.name.split(":", 1)[1] if cohort else None
         
         # Include invite_code_id if available
-        representation['invite_code_id'] = instance.invite_code.id if instance.invite_code else None
+        if 'invite_code_id' in representation:
+            representation['invite_code_id'] = instance.invite_code.id if instance.invite_code else None
         
         return representation
 
@@ -133,6 +134,6 @@ class ProfileSerializer(serializers.ModelSerializer):
 class ProfileSummarySerializer(ProfileSerializer):
     class Meta:
         model = Profile
-        fields = ['name', 'role', 'team', 'cohort']
+        fields = ['id', 'user_id', 'name', 'role', 'team', 'cohort']
         read_only_fields = fields
 
