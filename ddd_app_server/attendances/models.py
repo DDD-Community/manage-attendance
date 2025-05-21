@@ -12,6 +12,7 @@ class Attendance(models.Model):
         ('late', '지각'),
         ('absent', '결석'),
         ('exception', '예외'),
+        ('auto', '자동'),
     )
     METHOD_CHOICES = (
         ('qr', 'QR출석'),
