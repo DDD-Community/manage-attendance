@@ -21,6 +21,7 @@ from common.serializers import ErrorResponseSerializer
 from schedules.models import Schedule
 from .models import Attendance
 from .serializers import AttendanceSerializer, AttendanceCountSerializer
+from rest_framework.exceptions import PermissionDenied
 from .swagger_docs import (
     AttendanceListResponseSerializer,
     # AttendanceCreateResponseSerializer,
@@ -140,7 +141,7 @@ class AttendanceDetailView(BaseResponseMixin, APIView):
             is_staff = (request.user.is_staff or request.user.groups.filter(name="moderator").exists())
 
             if not (is_owner or is_staff):
-                raise permissions.PermissionDenied("이 출석 정보에 접근할 권한이 없습니다.")
+                raise PermissionDenied("이 출석 정보에 접근할 권한이 없습니다.")
 
             # Optional Time Constraint Check (for PATCH/DELETE, maybe?)
             if check_time and not is_staff: # Staff bypasses time check
@@ -150,7 +151,7 @@ class AttendanceDetailView(BaseResponseMixin, APIView):
                     # Use a specific exception or return a specific response maybe?
                     # For now, let's raise PermissionDenied for timing issues too for simplicity in helper
                     # Or maybe a different error like ValidationError? Let's stick to PermissionDenied for now.
-                    raise permissions.PermissionDenied("현재 이 작업을 수행할 수 없는 시간입니다.")
+                    raise PermissionDenied("현재 이 작업을 수행할 수 없는 시간입니다.")
 
             return attendance
 
