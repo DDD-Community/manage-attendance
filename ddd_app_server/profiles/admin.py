@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Cohort
+from .models import Profile
 from django.contrib.auth.models import Group
 import random
 
@@ -38,9 +38,4 @@ class ProfileAdmin(admin.ModelAdmin):
     def email(self, obj):
         return obj.user.email
 
-class CohortAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'description', 'created_at')
-    search_fields = ('name',)
-
 admin.site.register(Profile, ProfileAdmin)
-admin.site.register(Cohort, CohortAdmin)
