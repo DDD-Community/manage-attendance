@@ -70,7 +70,7 @@ def sync_attendance_for_group(modeladmin, request, queryset):
 # --- Updated Schedule Admin ---
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'cohort', 'group', 'start_time', 'end_time') # Added group
+    list_display = ('id', 'title', 'group', 'start_time', 'end_time') # Added group
     search_fields = ('title', 'description', 'group__name') # Search by group name
     list_filter = ('start_time', 'end_time', 'group') # Filter by group
     ordering = ('-start_time',)
