@@ -96,6 +96,12 @@ LOGGING = {
             'filename': '/app/logs/django_general.log',
             'formatter': 'verbose',
         },
+        'file_errors_detail': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/app/logs/django_errors_detail.log',
+            'formatter': 'verbose',
+        }
     },
     'loggers': {
         'django': {
@@ -106,6 +112,11 @@ LOGGING = {
         'django.request': {
             'handlers': ['console', 'file_errors'],
             'level': 'ERROR',
+            'propagate': False,
+        },
+        'standardized_error': {
+            'handlers': ['console', 'file_errors_detail'],
+            'level': 'DEBUG',
             'propagate': False,
         },
         '': {  # Root logger

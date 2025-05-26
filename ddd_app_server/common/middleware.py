@@ -5,8 +5,10 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db import IntegrityError
 import logging
+import json
+from datetime import datetime
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('standardized_error')
 
 class StandardizedErrorMiddleware:
     def __init__(self, get_response):
@@ -17,8 +19,11 @@ class StandardizedErrorMiddleware:
         return response
 
     def process_exception(self, request, exception):
+        # Log exception details for debugging
+        self.log_exception_details(request, exception)
+
         # 로깅
-        logger.error(f"Error occurred: {str(exception)}", exc_info=True)
+        logger.exception(f"Error occurred: {str(exception)}", exc_info=True)
 
         # APIException 처리
         if isinstance(exception, APIException):
@@ -49,4 +54,28 @@ class StandardizedErrorMiddleware:
             "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
             "message": "서버 내부 오류가 발생했습니다.",
             "data": str(exception) if settings.DEBUG else None
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def log_exception_details(self, request, exception):
+        try:
+            error_details = {
+                "timestamp": datetime.now().isoformat(),
+                "exception": str(exception),
+                "request_method": request.method,
+                "request_path": request.path,
+                "query_params": request.GET.dict(),
+                "headers": {k: v for k, v in request.headers.items()},
+                "body": self.get_request_body(request)
+            }
+            # Log the error details as a JSON string
+            logger.error("Exception details: %s", json.dumps(error_details, ensure_ascii=False))
+        except Exception as e:
+            logger.error(f"Failed to log exception details: {str(e)}")
+
+    def get_request_body(self, request):
+        try:
+            if request.body:
+                return json.loads(request.body.decode('utf-8'))
+        except Exception:
+            return "Unable to parse body"
+        return None
