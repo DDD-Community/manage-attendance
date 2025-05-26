@@ -1,13 +1,40 @@
+import os
 from .base import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+INTERNAL_IPS = [
+    '127.0.0.1',
+    'localhost',
+    '2001:4860:7:50e::f',
+    '106.242.190.114',
+    '192.168.0.13'
+]
+def show_toolbar(request):
+    return True
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': show_toolbar,
+    'INSERT_BEFORE': '</head>',
+    'HIDE_DJANGO_SQL': True,
+    'HIDE_TEMPLATE_CONTEXT': True,
+}
 
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS += [
+    'localhost',
+    '*.ufxpri.dev',
+    'home.ufxpri.dev',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://ufxpri.dev',
+    'https://*.ufxpri.dev',
+    'https://home.ufxpri.dev',
+]
 # Database
 DATABASES = {
     'default': {
@@ -22,9 +49,6 @@ REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (
     'rest_framework.renderers.BrowsableAPIRenderer',
 )
 
-# # Email backend for development
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 # CORS settings for development
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development!
 
@@ -32,13 +56,49 @@ CORS_ALLOW_ALL_ORIGINS = True  # Only for development!
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file_errors': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': '/app/logs/django_errors.log',
+            'formatter': 'verbose',
+        },
+        'file_general': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/app/logs/django_general.log',
+            'formatter': 'verbose',
+        },
     },
-} 
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file_errors'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console', 'file_errors'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        '': {  # Root logger
+            'handlers': ['console', 'file_general', 'file_errors'],
+            'level': 'INFO',
+        },
+    },
+}

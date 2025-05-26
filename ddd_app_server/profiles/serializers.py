@@ -75,7 +75,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     def _extract_group_value(self, user_groups, prefix):
         """Extract the value of a group based on its prefix."""
         group = next((g for g in user_groups if g.name.startswith(prefix)), None)
-        return group.name.split(":", 1)[1] if group else None
+        return group.name.split(":", 1)[1] if group else ""
 
     def _update_field(self, instance, validated_data, field_name):
         """Update a field on the instance if provided in validated_data."""
