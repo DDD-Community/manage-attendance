@@ -18,11 +18,12 @@ class UserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     invite_code_id = serializers.UUIDField(required=False, allow_null=True)
-    role = serializers.CharField(required=False, allow_null=True)
-    team = serializers.CharField(required=False, allow_null=True)
-    crew = serializers.CharField(required=False, allow_null=True)
-    responsibility = serializers.CharField(required=False, allow_null=True)
-    cohort = serializers.CharField(required=False, allow_null=True)
+    name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    role = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    team = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    crew = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    responsibility = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    cohort = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     is_staff = serializers.SerializerMethodField()
 
     class Meta:
