@@ -1,12 +1,12 @@
 services:
-  db:
-    image: postgres:15
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: django
-      POSTGRES_PASSWORD: securepassword
-      POSTGRES_DB: djangodb
+  # db:
+  #   image: postgres:15
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_USER: django
+  #     POSTGRES_PASSWORD: securepassword
+  #     POSTGRES_DB: djangodb
 
   ddd_app_server:
     build:
@@ -14,16 +14,19 @@ services:
       dockerfile: ./docker/Dockerfile
     volumes:
       - ./ddd_app_server:/app
-      - static_volume:/tmp/static
-      - media_volume:/tmp/media
+      - static_volume:/var/www/static
+      - media_volume:/var/www/media
     environment:
-      - DJANGO_SETTINGS_MODULE=ddd_app_server.settings.production
+      - DJANGO_SETTINGS_MODULE=ddd_app_server.settings.local
+      # - DJANGO_SETTINGS_MODULE=ddd_app_server.settings.production
     expose:
       - "8000"
+    ports:
+      - "8000:8000"
     env_file:
       - .env
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
 
   nginx:
     image: nginx:stable-alpine

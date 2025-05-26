@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
+from debug_toolbar.toolbar import debug_toolbar_urls
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
@@ -40,6 +41,7 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
+    urlpatterns += debug_toolbar_urls()
     urlpatterns += [
         # API Documentation
         path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
