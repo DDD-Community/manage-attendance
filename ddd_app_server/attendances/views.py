@@ -93,7 +93,7 @@ class AttendanceListView(BaseResponseMixin, APIView):
 
             # Team 필터링
             if team_filter:
-                filtered_queryset = filtered_queryset.filter(user__groups__name=f"team:{team_filter}")
+                filtered_queryset = filtered_queryset.filter(user__profile__team=team_filter)
             
             # 날짜 필터링
             if start_date_filter:
