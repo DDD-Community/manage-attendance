@@ -107,6 +107,41 @@
       },
       "parameters": []
     },
+    "/api/v1/profiles/": {
+      "post": {
+        "operationId": "api_v1_profiles_create",
+        "summary": "프로필 생성",
+        "description": "새로운 프로필을 생성합니다.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Profile"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/Profile"
+            }
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "profiles"
+        ]
+      },
+      "parameters": []
+    },
     "/api/v1/profiles/me/": {
       "get": {
         "operationId": "api_v1_profiles_me_list",
@@ -954,6 +989,16 @@
         },
         "user": {
           "$ref": "#/definitions/User"
+        },
+        "email": {
+          "title": "Email",
+          "type": "string",
+          "format": "email"
+        },
+        "password": {
+          "title": "Password",
+          "type": "string",
+          "x-nullable": true
         },
         "name": {
           "title": "Name",
