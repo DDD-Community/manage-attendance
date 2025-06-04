@@ -110,13 +110,10 @@ docker-compose exec ddd_app_server python manage.py collectstatic
 # 로컬개발
 DJANGO_SETTINGS_MODULE=ddd_app_server.settings.local python manage.py runserver --settings=settings.local
 
-# 프로덕션
-## 일반 포트 사용
+# 프로덕션 (Gunicorn 사용)
 export DJANGO_SETTINGS_MODULE=ddd_app_server.settings.production
-gunicorn ddd_app_server.wsgi:application --bind 0.0.0.0:8000
-## unix 소켓 사용
-export DJANGO_SETTINGS_MODULE=ddd_app_server.settings.production
-gunicorn ddd_app_server.wsgi:application --bind unix:/tmp/gunicorn.sock
+gunicorn -c config/gunicorn/gunicorn.config.py
+# 환경 변수로 바인드 주소(GUNICORN_BIND)나 워커 수(GUNICORN_WORKERS) 등을 조정할 수 있습니다.
 ```
 
 ## 레퍼런스
