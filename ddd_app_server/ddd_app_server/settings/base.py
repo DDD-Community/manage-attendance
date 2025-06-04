@@ -24,6 +24,13 @@ load_dotenv()
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Request logging settings
+ENABLE_REQUEST_LOGGING = os.getenv("ENABLE_REQUEST_LOGGING", "False").lower() == "true"
+REQUEST_LOG_FILE = os.getenv(
+    "REQUEST_LOG_FILE",
+    str(BASE_DIR / "logs" / "request_logs.jsonl"),
+)
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -73,6 +80,9 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'common.middleware.StandardizedErrorMiddleware',
 ]
+
+if ENABLE_REQUEST_LOGGING:
+    MIDDLEWARE.append('common.request_logging.RequestLoggingMiddleware')
 
 ROOT_URLCONF = 'ddd_app_server.urls'
 
