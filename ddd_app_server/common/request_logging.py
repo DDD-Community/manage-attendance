@@ -1,51 +1,48 @@
-import json
-import os
-from django.conf import settings
+import logging
+import re
+import time
+from datetime import datetime, UTC
+
+
+logger = logging.getLogger(__name__)
 
 
 class RequestLoggingMiddleware:
-    """Middleware that logs incoming HTTP requests."""
+    ping_reg = re.compile(r".*/ping$")
 
-    def __init__(self, get_response):
+    def __init__(self, get_response=None):
         self.get_response = get_response
-        self.enabled = getattr(settings, "ENABLE_REQUEST_LOGGING", False)
-        self.log_file = getattr(
-            settings,
-            "REQUEST_LOG_FILE",
-            os.path.join(settings.BASE_DIR, "logs", "request_logs.jsonl"),
-        )
-        if self.enabled:
-            log_dir = os.path.dirname(self.log_file)
-            if log_dir and not os.path.exists(log_dir):
-                os.makedirs(log_dir, exist_ok=True)
+
+    def is_ping_req(self, path):
+        return True if self.ping_reg.match(path) else False
+
+    @staticmethod
+    def _headers(request):
+        return {
+            key: value
+            for (key, value) in request.META.items()
+            if key.startswith("HTTP_")
+        }
 
     def __call__(self, request):
-        if self.enabled:
-            self.log_request(request)
+        request_at = time.time()
+
+        body = ""
+        if request.method == "POST" and request.content_type == "application/json":
+            body = request.body
         response = self.get_response(request)
+        if self.is_ping_req(request.get_full_path()):
+            return response
+
+        elapsed_time = round(time.time() - request_at, 3)
+        tag = "-"
+        if elapsed_time > 1:
+            tag = "SLOW_API"
+
+        logger.info(
+            f"{datetime.now(UTC)} ACCESS LOG {tag} {request.method} {request.get_full_path()} "
+            f"status={response.status_code} elapsed={elapsed_time} headers={self._headers(request)} "
+            f"body={body}"
+        )
+
         return response
-
-    def log_request(self, request):
-        data = {
-            "method": request.method,
-            "path": request.path,
-            "headers": {k: v for k, v in request.headers.items()},
-            "query_params": request.GET.dict(),
-            "body": self.get_body(request),
-        }
-        try:
-            with open(self.log_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(data, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
-
-    def get_body(self, request):
-        if not request.body:
-            return None
-        try:
-            return json.loads(request.body.decode("utf-8"))
-        except Exception:
-            try:
-                return request.body.decode("utf-8")
-            except Exception:
-                return str(request.body)
