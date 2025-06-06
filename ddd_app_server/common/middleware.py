@@ -1,16 +1,18 @@
-from django.http import JsonResponse
+import re
+import time
+import json
+import logging
+from datetime import datetime, UTC
 from rest_framework import status
 from rest_framework.exceptions import APIException
-from django.core.exceptions import ValidationError
-from django.conf import settings
 from django.db import IntegrityError
-import logging
-import json
-from datetime import datetime
+from django.http import JsonResponse
+from django.conf import settings
+from django.core.exceptions import ValidationError
 
-logger = logging.getLogger('standardized_error')
 
 class StandardizedErrorMiddleware:
+    logger = logging.getLogger('standardized_error')
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -19,11 +21,8 @@ class StandardizedErrorMiddleware:
         return response
 
     def process_exception(self, request, exception):
-        # Log exception details for debugging
-        self.log_exception_details(request, exception)
-
         # 로깅
-        logger.exception(f"Error occurred: {str(exception)}", exc_info=True)
+        self.logger.exception(f"Error occurred: {str(exception)}", exc_info=True)
 
         # APIException 처리
         if isinstance(exception, APIException):
@@ -56,26 +55,44 @@ class StandardizedErrorMiddleware:
             "data": str(exception) if settings.DEBUG else None
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def log_exception_details(self, request, exception):
-        try:
-            error_details = {
-                "timestamp": datetime.now().isoformat(),
-                "exception": str(exception),
-                "request_method": request.method,
-                "request_path": request.path,
-                "query_params": request.GET.dict(),
-                "headers": {k: v for k, v in request.headers.items()},
-                "body": self.get_request_body(request)
-            }
-            # Log the error details as a JSON string
-            logger.error("Exception details: %s", json.dumps(error_details, ensure_ascii=False))
-        except Exception as e:
-            logger.error(f"Failed to log exception details: {str(e)}")
 
-    def get_request_body(self, request):
-        try:
-            if request.body:
-                return json.loads(request.body.decode('utf-8'))
-        except Exception:
-            return "Unable to parse body"
-        return None
+class RequestLoggingMiddleware:
+    logger = logging.getLogger("request_logging")
+    ping_reg = re.compile(r".*/ping$")
+
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+
+    def is_ping_req(self, path):
+        return True if self.ping_reg.match(path) else False
+
+    @staticmethod
+    def _headers(request):
+        return {
+            key: value
+            for (key, value) in request.META.items()
+            if key.startswith("HTTP_")
+        }
+
+    def __call__(self, request):
+        request_at = time.time()
+
+        body = ""
+        if request.method == "POST" and request.content_type == "application/json":
+            body = request.body
+        response = self.get_response(request)
+        if self.is_ping_req(request.get_full_path()):
+            return response
+
+        elapsed_time = round(time.time() - request_at, 3)
+        tag = "-"
+        if elapsed_time > 1:
+            tag = "SLOW_API"
+
+        self.logger.info(
+            f"{datetime.now(UTC)} ACCESS LOG {tag} {request.method} {request.get_full_path()} "
+            f"status={response.status_code} elapsed={elapsed_time} headers={self._headers(request)} "
+            f"body={body}"
+        )
+
+        return response
