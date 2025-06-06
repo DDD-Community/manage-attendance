@@ -21,14 +21,13 @@ class ProfileSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     role = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     team = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    crew = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     responsibility = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     cohort = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     is_staff = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'crew', 'responsibility', 'cohort', 'is_staff', 'created_at', 'updated_at']
+        fields = ['id', 'user_id', 'name', 'invite_code_id', 'role', 'team', 'responsibility', 'cohort', 'is_staff', 'created_at', 'updated_at']
         read_only_fields = ['id', 'user_id', 'created_at', 'is_staff', 'updated_at']
 
     def get_is_staff(self, obj):
@@ -42,7 +41,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Extract group-based fields
         representation['role'] = self._extract_group_value(user_groups, "role:")
         representation['team'] = self._extract_group_value(user_groups, "team:")
-        representation['crew'] = self._extract_group_value(user_groups, "team:")  # TODO: Keep crew for now
         representation['responsibility'] = self._extract_group_value(user_groups, "responsibility:")
         representation['cohort'] = self._extract_group_value(user_groups, "cohort:")
 
@@ -66,7 +64,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Update group-based fields
         self._update_group(request_user, validated_data, 'role', "role:")
         self._update_group(request_user, validated_data, 'team', "team:")
-        self._update_group(request_user, validated_data, 'crew', "team:")  # TODO: Keep crew for now
         self._update_group(request_user, validated_data, 'responsibility', "responsibility:")
         self._update_group(request_user, validated_data, 'cohort', "cohort:")
 
