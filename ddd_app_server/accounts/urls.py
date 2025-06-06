@@ -9,17 +9,17 @@ from .views import (
 )
 
 urlpatterns = [
-    path("", include("dj_rest_auth.urls")),
+    # path("", include("dj_rest_auth.urls")),
     path("registration/", include("dj_rest_auth.registration.urls")),
     path("token/blacklist/", TokenBlacklistView.as_view(), name="token_blacklist"),
     
     ## OAuth
-    path("oauth/", include("allauth.urls")),
+    # path("oauth/", include("allauth.urls")),
     path('token/email/', EmailTokenObtainPairView.as_view(), name='token_obtain_email'),
     # path("token/session/", ObtainJWTFromSessionView.as_view(), name="session-to-jwt"),
     
     
-    path("profile/", ProfileView.as_view(), name="account_profile"),
+    # path("profile/", ProfileView.as_view(), name="account_profile"),
     
     
     path("check-email/", CheckEmailUsedView.as_view(), name="check_email_used"),
