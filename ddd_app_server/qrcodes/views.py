@@ -83,10 +83,10 @@ class QRCodeGenerateView(BaseResponseMixin, APIView):
         user = request.user
         
         # 만료 시간 정의
-        expire_at = now() + timedelta(minutes=5)
+        expires_at = now() + timedelta(minutes=5)
         
         # ID를 얻기 위해 먼저 로그 항목 생성
-        qr_log = QRLog.objects.create(user=user, expire_at=expire_at)
+        qr_log = QRLog.objects.create(user=user, expires_at=expires_at)
         
         serializer = QRLogSerializer(qr_log)
         return self.create_response(
@@ -145,7 +145,7 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
             )
 
         # 사례 2: QR 코드가 만료됨
-        if now() > qr_log.expire_at:
+        if now() > qr_log.expires_at:
             return self.create_response(
                 code=status.HTTP_410_GONE,
                 message="만료된 QR 코드입니다.",
