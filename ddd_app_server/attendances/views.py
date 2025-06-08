@@ -148,20 +148,12 @@ class AttendanceDetailView(BaseResponseMixin, APIView):
                 current_time = now()
                 schedule = attendance.schedule
                 if not (schedule.start_time <= current_time <= schedule.end_time):
-                    # Use a specific exception or return a specific response maybe?
-                    # For now, let's raise PermissionDenied for timing issues too for simplicity in helper
-                    # Or maybe a different error like ValidationError? Let's stick to PermissionDenied for now.
                     raise PermissionDenied("현재 이 작업을 수행할 수 없는 시간입니다.")
 
             return attendance
 
         except Attendance.DoesNotExist:
-            # This exception will be implicitly handled by get_object_or_404,
-            # but keeping explicit except block for clarity if needed later.
-            # We re-raise it here so the main methods can catch it if desired,
-            # but get_object_or_404 already raises Http404.
-            # Let get_object_or_404 handle the 404 response directly.
-             raise # Re-raise the Http404 from get_object_or_404
+             raise
 
 
     @swagger_auto_schema(
@@ -202,22 +194,6 @@ class AttendanceDetailView(BaseResponseMixin, APIView):
         # 데이터 유효성 검사 및 수정 (partial=True 로 부분 업데이트 허용)
         serializer = self.serializer_class(attendance, data=request.data, partial=True, context={"request": request})
         if serializer.is_valid():
-            status_value = serializer.validated_data.get('status', None)
-            if status_value == 'auto':
-                current_time = now()
-                schedule = attendance.schedule
-                start_time = schedule.start_time
-                # 출석: 시작 1시간 전 부터 시작 10분 후 까지
-                if start_time - timedelta(hours=1) <= current_time <= start_time + timedelta(minutes=10):
-                    serializer.validated_data['status'] = 'present'
-                # 지각: 시작 10분 이후부터 60분 이내
-                elif start_time + timedelta(minutes=10) < current_time <= start_time + timedelta(minutes=60):
-                    serializer.validated_data['status'] = 'late'
-                # 결석: 시작 60분 이후
-                elif current_time > start_time + timedelta(minutes=60):
-                    serializer.validated_data['status'] = 'absent'
-                else:
-                    serializer.validated_data['status'] = 'tbd'
             serializer.save()
             return self.create_response(200, "출석 정보가 성공적으로 수정되었습니다.", serializer.data)
         else:
