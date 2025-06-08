@@ -3,6 +3,8 @@ from .models import Attendance
 from profiles.models import Profile
 from schedules.models import Schedule
 from profiles.serializers import ProfileSummarySerializer
+from datetime import timedelta
+from django.utils.timezone import now
 
 
 class ScheduleSummarySerializer(serializers.ModelSerializer):
@@ -22,17 +24,11 @@ class AttendanceSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'profile_summary', 'schedule_summary', 'updated_at']
 
     def get_profile_summary(self, obj):
-        """
-        Returns the serialized profile summary for the user.
-        """
         if hasattr(obj, 'user') and hasattr(obj.user, 'profile'):
             return ProfileSummarySerializer(obj.user.profile).data
         return None
 
     def get_schedule_summary(self, obj):
-        """
-        Returns the serialized schedule summary.
-        """
         if hasattr(obj, 'schedule'):
             return ScheduleSummarySerializer(obj.schedule).data
         return None
@@ -46,6 +42,25 @@ class AttendanceSerializer(serializers.ModelSerializer):
         if value and value not in dict(Attendance.METHOD_CHOICES):
             raise serializers.ValidationError("유효하지 않은 출석 방법입니다.")
         return value
+
+    def update(self, instance, validated_data):
+        status_value = validated_data.get('status', None)
+        if status_value == 'auto':
+            current_time = now()
+            schedule = instance.schedule
+            start_time = schedule.start_time
+            # 출석: 시작 1시간 전 부터 시작 10분 후 까지
+            if start_time - timedelta(hours=1) <= current_time <= start_time + timedelta(minutes=10):
+                validated_data['status'] = 'present'
+            # 지각: 시작 10분 이후부터 60분 이내
+            elif start_time + timedelta(minutes=10) < current_time <= start_time + timedelta(minutes=60):
+                validated_data['status'] = 'late'
+            # 결석: 시작 60분 이후
+            elif current_time > start_time + timedelta(minutes=60):
+                validated_data['status'] = 'absent'
+            else:
+                validated_data['status'] = 'tbd'
+        return super().update(instance, validated_data)
 
 
 class AttendanceCountSerializer(serializers.Serializer):

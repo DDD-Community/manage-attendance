@@ -15,6 +15,7 @@ from .models import QRLog
 from common.serializers import ErrorResponseSerializer
 from .serializers import QRLogSerializer
 from common.mixins import BaseResponseMixin
+from attendances.models import Attendance
 
 # QR 코드 생성 응답 Serializer
 class QRCodeGenerateSuccessResponseSerializer(serializers.Serializer):
@@ -125,7 +126,7 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
         
         # 기본 키(ID)로 QR 코드 로그 항목 찾기
         try:
-            qr_log = QRLog.objects.get(pk=qr_id)
+            qr_log = QRLog.objects.select_related('user').get(pk=qr_id)
         except QRLog.DoesNotExist:
             return self.create_response(
                 code=status.HTTP_400_BAD_REQUEST,
@@ -151,7 +152,18 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
                 data={"valid": False},
                 status_code=status.HTTP_410_GONE
             )
-            
+
+        # 출석 수정
+        attendance = Attendance.objects.select_related('user', 'schedule').filter(
+            user=qr_log.user,
+            schedule__start_time__lte=now(),
+            schedule__end_time__gte=now()
+        ).first()
+
+        if attendance:
+            attendance.update(status='auto', method='qr')
+            attendance.save()
+
         # 모든 확인을 통과하면 QR 코드가 유효함
         # 'decoded_at' 타임스탬프를 설정하여 사용됨으로 표시
         qr_log.decoded_at = now()

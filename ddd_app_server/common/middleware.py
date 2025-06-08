@@ -78,7 +78,7 @@ class RequestLoggingMiddleware:
         request_at = time.time()
 
         body = ""
-        if request.method == "POST" and request.content_type == "application/json":
+        if request.method in ["POST", "PATCH"] and request.content_type == "application/json":
             body = request.body
         response = self.get_response(request)
         if self.is_ping_req(request.get_full_path()):
