@@ -23,6 +23,14 @@ class QRCodeGenerateSuccessResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="QR JWT가 생성되었습니다.")
     data = QRLogSerializer()
 
+# QR 코드 검증 요청 Serializer
+class QRCodeValidateRequestSerializer(serializers.Serializer):
+    qr_string = serializers.CharField(
+        help_text="QR 코드 문자열 (QRLog 레코드의 ID)",
+        required=True,
+        allow_blank=False
+    )
+
 # QR 코드 검증 응답 Serializer
 class QRCodeValidateSuccessResponseSerializer(serializers.Serializer):
     code = serializers.IntegerField(default=200)
@@ -106,7 +114,7 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
         tags=["qr"],
         operation_summary="QR 코드 검증",
         operation_description="제공된 QR 코드(QRLog ID)를 검증합니다.",
-        request_body=QRLogSerializer,
+        request_body=QRCodeValidateRequestSerializer,
         responses={
             200: QRCodeValidateSuccessResponseSerializer,
             410: QRCodeValidateFailedResponseSerializer,
