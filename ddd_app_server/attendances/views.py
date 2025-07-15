@@ -19,6 +19,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from common.mixins import BaseResponseMixin
 from common.serializers import ErrorResponseSerializer
 from schedules.models import Schedule
+from qrcodes.models import QRLog
 from .models import Attendance
 from .serializers import AttendanceSerializer, AttendanceCountSerializer
 from rest_framework.exceptions import PermissionDenied
@@ -217,6 +218,115 @@ class AttendanceDetailView(BaseResponseMixin, APIView):
 
     #     # Return 204 No Content (standard REST practice)
     #     return self.create_response(204, "출석이 성공적으로 삭제되었습니다.", None)
+
+
+class AttendWithQRView(BaseResponseMixin, APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    @swagger_auto_schema(
+        tags=["attendance"],
+        operation_summary="QR 코드로 출석",
+        operation_description="""
+        QR 코드를 통해 출석을 기록합니다.
+        스케줄 ID와 QR 코드 값을 제공해야 합니다.
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'schedule_id': openapi.Schema(type=openapi.TYPE_STRING, description="스케줄 ID (UUID 형식)"),
+                'qr_code_value': openapi.Schema(type=openapi.TYPE_STRING, description="QR 코드 값")
+            },
+            required=['qr_code_value']
+        ),
+        responses={
+            200: AttendanceSerializer(),
+            400: ErrorResponseSerializer(),
+            403: ErrorResponseSerializer(),
+            404: ErrorResponseSerializer(),
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        schedule_id = request.data.get('schedule_id', None)
+        qr_code_value = request.data.get('qr_code_value')
+
+        if not qr_code_value:
+            return self.create_response(400, "QR 코드 값을 제공해야 합니다.", None, status.HTTP_400_BAD_REQUEST)
+
+        try:
+            qr_log = QRLog.objects.select_related('user').get(pk=qr_code_value)
+        except QRLog.DoesNotExist:
+            return self.create_response(
+                code=status.HTTP_404_NOT_FOUND,
+                message="QR 코드 로그를 찾을 수 없습니다.",
+                data=None,
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+        # 사례 1: QR 코드가 이미 사용됨
+        if qr_log.decoded_at:
+            return self.create_response(
+                code=status.HTTP_410_GONE,
+                message="이미 사용된 QR 코드입니다.",
+                data=None,
+                status_code=status.HTTP_410_GONE
+            )
+
+        # 사례 2: QR 코드가 만료됨
+        if now() > qr_log.expires_at:
+            return self.create_response(
+                code=status.HTTP_410_GONE,
+                message="만료된 QR 코드입니다.",
+                data=None,
+                status_code=status.HTTP_410_GONE
+            )
+
+        # 출석 탐색
+        attendance: Attendance = None
+        if not schedule_id:
+            attendance = Attendance.objects.select_related('user', 'schedule').filter(
+                user=qr_log.user,
+                schedule__start_time__lte=now(),
+                schedule__end_time__gte=now()
+            ).first()
+        else:
+            attendance = Attendance.objects.select_related('user', 'schedule').filter(
+                user=qr_log.user,
+                schedule__id=schedule_id
+            ).first()
+        if not attendance:
+            return self.create_response(404, "해당 출석 기록을 찾을 수 없습니다.", None, status.HTTP_404_NOT_FOUND)
+
+        # TODO # Check if the user is allowed to mark attendance for this schedule
+        # if not (request.user.is_staff or request.user.groups.filter(name="moderator").exists() or request.user == attendance.user):
+        #     return self.create_response(403, "이 스케줄에 대한 출석을 기록할 권한이 없습니다.", None, status.HTTP_403_FORBIDDEN)
+
+        # 출석 수정
+        if attendance:
+            current_time = now()
+            schedule = attendance.schedule
+            start_time = schedule.start_time
+            # 출석: 시작 1시간 전 부터 시작 10분 후 까지
+            if start_time - timedelta(hours=1) <= current_time <= start_time + timedelta(minutes=10):
+                attendance.status = 'present'
+            # 지각: 시작 10분 이후부터 60분 이내
+            elif start_time + timedelta(minutes=10) < current_time <= start_time + timedelta(minutes=60):
+                attendance.status = 'late'
+            # 결석: 시작 60분 이후
+            elif current_time > start_time + timedelta(minutes=60):
+                attendance.status = 'absent'
+            else:
+                attendance.status = 'tbd'
+            attendance.method = 'qr'
+            attendance.save()
+
+        # 모든 확인을 통과하면 QR 코드가 유효함
+        # 'decoded_at' 타임스탬프를 설정하여 사용됨으로 표시
+        qr_log.decoded_at = now()
+        qr_log.save()
+
+        serializer = AttendanceSerializer(attendance, context={"request": request})
+        return self.create_response(200, "출석이 성공적으로 기록되었습니다.", serializer.data)
 
 
 class AttendanceCountView(BaseResponseMixin, APIView):
