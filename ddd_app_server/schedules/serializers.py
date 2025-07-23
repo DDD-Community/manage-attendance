@@ -6,12 +6,18 @@ from profiles.serializers import ProfileSummarySerializer
 
 
 class AttendanceSummarySerializer(serializers.ModelSerializer):
-    profile = ProfileSummarySerializer(source='user.profile', read_only=True)
+    profile = serializers.SerializerMethodField()
 
     class Meta:
         model = Attendance
         fields = ['profile', 'status', 'updated_at', 'method', 'note']
         read_only_fields = fields
+
+    def get_profile(self, obj):
+        profile = getattr(obj.user, 'profile', None)
+        if profile:
+            return ProfileSummarySerializer(profile).data
+        return None
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
