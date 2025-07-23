@@ -1,4 +1,5 @@
 import logging
+from django.http import Http404
 from rest_framework import permissions, status, serializers
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -31,10 +32,13 @@ class ProfileDetailView(BaseResponseMixin, CurrentProfileMixin, APIView):
         },
     )
     def get(self, request, *args, **kwargs):
-        profile_id = self.kwargs.get('profile_id')
-        profile = self.get_profile(profile_id)
-        serializer = ProfileSerializer(profile)
-        return self.create_response(200, "프로필 정보를 성공적으로 조회했습니다.", serializer.data)
+        profile_id = self.kwargs.get('profile_id', 'me')
+        try:
+            profile = self.get_profile(profile_id)
+            serializer = ProfileSerializer(profile)
+            return self.create_response(200, "프로필 정보를 성공적으로 조회했습니다.", serializer.data)
+        except Http404:
+            return self.create_response(404, "프로필을 찾을 수 없습니다.", None, status.HTTP_404_NOT_FOUND)
 
     @swagger_auto_schema(
         tags=["profiles"],
