@@ -24,8 +24,9 @@ class AttendanceSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'profile_summary', 'schedule_summary', 'updated_at']
 
     def get_profile_summary(self, obj):
-        if hasattr(obj, 'user') and hasattr(obj.user, 'profile'):
-            return ProfileSummarySerializer(obj.user.profile).data
+        profile = getattr(obj.user, 'profile', None)
+        if profile:
+            return ProfileSummarySerializer(profile).data
         return None
 
     def get_schedule_summary(self, obj):
@@ -44,23 +45,32 @@ class AttendanceSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
-        status_value = validated_data.get('status', None)
+        # Get the status from validated_data, default to the instance's current status
+        status_value = validated_data.get('status', instance.status)
+
+        # If status is 'auto', determine the status based on time
         if status_value == 'auto':
             current_time = now()
             schedule = instance.schedule
             start_time = schedule.start_time
-            # 출석: 시작 1시간 전 부터 시작 10분 후 까지
             if start_time - timedelta(hours=1) <= current_time <= start_time + timedelta(minutes=10):
-                validated_data['status'] = 'present'
-            # 지각: 시작 10분 이후부터 60분 이내
+                instance.status = 'present'
             elif start_time + timedelta(minutes=10) < current_time <= start_time + timedelta(minutes=60):
-                validated_data['status'] = 'late'
-            # 결석: 시작 60분 이후
+                instance.status = 'late'
             elif current_time > start_time + timedelta(minutes=60):
-                validated_data['status'] = 'absent'
+                instance.status = 'absent'
             else:
-                validated_data['status'] = 'tbd'
-        return super().update(instance, validated_data)
+                instance.status = 'tbd'
+        else:
+            # Otherwise, just update the status from validated_data
+            instance.status = status_value
+
+        # Update other fields if they are in validated_data
+        instance.method = validated_data.get('method', instance.method)
+        instance.note = validated_data.get('note', instance.note)
+
+        instance.save()
+        return instance
 
 
 class AttendanceCountSerializer(serializers.Serializer):
