@@ -9,14 +9,7 @@ def update_profile(sender, instance, created, **kwargs):
     """
     Create or update the user profile when a User instance is created or updated.
     """
-    if created:
-        # Create a new profile for the user
-        Profile.objects.create(
-            user=instance,
-            name=instance.get_full_name() or instance.username
-        )
-    else:
-        # Update the existing profile
-        with transaction.atomic():
-            instance.profile.name = instance.get_full_name() or instance.username
-            instance.profile.save()
+    Profile.objects.update_or_create(
+        user=instance,
+        defaults={'name': instance.get_full_name() or instance.username}
+    )
