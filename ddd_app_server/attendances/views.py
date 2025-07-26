@@ -286,7 +286,7 @@ class AttendWithQRView(BaseResponseMixin, APIView):
         if not schedule_id:
             attendance = Attendance.objects.select_related('user', 'schedule').filter(
                 user=qr_log.user,
-                schedule__start_time__lte=now(),
+                schedule__start_time__lte=now() + timedelta(minutes=60),
                 schedule__end_time__gte=now()
             ).first()
         else:
