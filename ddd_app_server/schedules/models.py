@@ -1,65 +1,32 @@
 # schedules/models.py
 import uuid
 from django.db import models
-from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.utils import timezone
+from django.contrib.auth.models import Group #, User
+from profiles.models import Cohort
+
 
 class Schedule(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    # Future: Add assigned_users field for user assignment
-    # assigned_users = models.ManyToManyField(User, related_name='assigned_schedules', blank=True)
-
-    def __str__(self):
-        return self.title
-
-    def create_attendances_for_all_users(self):
-        """Create attendance records for all users"""
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        users = User.objects.filter(groups__name='member')
-        for user in users:
-            Attendance.objects.get_or_create(
-                user=user,
-                schedule=self,
-                defaults={'status': 'tbd'}
-            )
-
-@receiver(post_save, sender=Schedule)
-def create_attendances(sender, instance, created, **kwargs):
-    if created:
-        instance.create_attendances_for_all_users()
-
-class Attendance(models.Model):
-    ATTENDANCE_STATUS_CHOICES = (
-        ('tbd', '미정'),
-        ('present', '출석'),
-        ('late', '지각'),
-        ('absent', '결석'),
-        ('exception', '예외'),
-    )
-    METHOD_CHOICES = (
-        ('qr', 'QR출석'),
-        ('manual', '수동출석'),
-    )
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances')
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name='attendances')
-    status = models.CharField(max_length=10, choices=ATTENDANCE_STATUS_CHOICES, default='tbd')
-    updated_at = models.DateTimeField(auto_now=True)
-    method = models.CharField(max_length=10, choices=METHOD_CHOICES, null=True, blank=True)
-    note = models.TextField(blank=True, null=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for the schedule.")
+    title = models.CharField(max_length=200, help_text="The title of the schedule.")
+    description = models.TextField(blank=True, help_text="A detailed description of the schedule.")
+    start_time = models.DateTimeField(help_text="The date and time when the schedule starts.")
+    end_time = models.DateTimeField(help_text="The date and time when the schedule ends.")
+    created_at = models.DateTimeField(auto_now_add=True, editable=False, help_text="Timestamp when the schedule was created.")
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, related_name='schedules', help_text="The group to which this schedule is assigned.")
+    cohort = models.ForeignKey(Cohort, on_delete=models.SET_NULL, null=True, blank=True, related_name='schedules')
 
     class Meta:
-        unique_together = ['user', 'schedule']
-        ordering = ['-schedule__start_time']
+        ordering = ['start_time', 'title']
 
     def __str__(self):
-        return f"{self.user} - {self.schedule} ({self.status})"
+        return f"{self.title} ({self.start_time.strftime('%Y-%m-%d %H:%M')})"
+
+    # # Example property to easily get assigned users via the group
+    # @property
+    # def assigned_users_through_group(self):
+    #     """Returns a queryset of users belonging to the assigned group."""
+    #     if self.assigned_group:
+    #         return self.assigned_group.user_set.all()
+    #     return User.objects.none() # Return an empty queryset if no group is assigned
+
+# from django.contrib.auth.models import User

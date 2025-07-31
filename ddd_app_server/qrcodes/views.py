@@ -6,16 +6,54 @@ from datetime import timedelta
 from rest_framework import permissions, status
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework_simplejwt.backends import TokenBackend
-from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework import serializers
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .models import QRLog
+from common.serializers import ErrorResponseSerializer
 from .serializers import QRLogSerializer
 from common.mixins import BaseResponseMixin
+from attendances.models import Attendance
+
+# QR 코드 생성 응답 Serializer
+class QRCodeGenerateSuccessResponseSerializer(serializers.Serializer):
+    code = serializers.IntegerField(default=201)
+    message = serializers.CharField(default="QR JWT가 생성되었습니다.")
+    data = QRLogSerializer()
+
+# QR 코드 검증 요청 Serializer
+class QRCodeValidateRequestSerializer(serializers.Serializer):
+    qr_string = serializers.CharField(
+        help_text="QR 코드 문자열 (QRLog 레코드의 ID)",
+        required=True,
+        allow_blank=False
+    )
+
+# QR 코드 검증 응답 Serializer
+class QRCodeValidateSuccessResponseSerializer(serializers.Serializer):
+    code = serializers.IntegerField(default=200)
+    message = serializers.CharField(default="QR 코드가 유효합니다.")
+    data = QRLogSerializer()
+
+# QR 코드 검증 실패 응답 Serializer
+class QRCodeValidateFailedResponseSerializer(serializers.Serializer):
+    code = serializers.IntegerField(default=410)
+    message = serializers.CharField(default="QR 코드가 만료되었습니다.")
+    data = serializers.SerializerMethodField()
+
+    def get_data(self, obj):
+        return {
+            "valid": False
+        }
+
+# QR 코드 목록 응답 Serializer
+class QRLogListSuccessResponseSerializer(serializers.Serializer):
+    code = serializers.IntegerField(default=200)
+    message = serializers.CharField(default="QR 로그를 성공적으로 조회했습니다.")
+    data = QRLogSerializer(many=True)
+
 
 class QRCodeGenerateView(BaseResponseMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -23,128 +61,121 @@ class QRCodeGenerateView(BaseResponseMixin, APIView):
 
     @swagger_auto_schema(
         tags=["qr"],
-        operation_summary="QR 코드 생성",
-        operation_description="로그인한 사용자의 ID를 JWT로 암호화한 QR 코드를 생성합니다. QR 코드는 생성 후 5분간 유효합니다.",
+        operation_summary="QR 로그 목록 조회",
+        operation_description="로그인된 사용자가 생성한 QR 코드 목록을 조회합니다.",
         responses={
-            201: openapi.Response(
-                description="QR 문자열(JWT) 생성 성공",
-                examples={
-                    "application/json": {
-                        "qr_string": "jwt-token-string"
-                    }
-                }
-            )
+            200: QRLogListSuccessResponseSerializer,
+            400: ErrorResponseSerializer
+        }
+    )
+    def get(self, request):
+        logs = QRLog.objects.filter(user=request.user).order_by('-created_at')
+        serializer = QRLogSerializer(logs, many=True)
+        return self.create_response(
+            code=status.HTTP_200_OK,
+            message="QR 로그를 성공적으로 조회했습니다.",
+            data=serializer.data,
+            status_code=status.HTTP_200_OK
+        )
+
+    @swagger_auto_schema(
+        tags=["qr"],
+        operation_summary="QR 코드 생성",
+        operation_description="레코드의 ID를 사용하여 새로운 QR 코드를 생성합니다. 5분간 유효합니다.",
+        responses={
+            200: QRCodeGenerateSuccessResponseSerializer,
+            400: ErrorResponseSerializer,
         }
     )
     def post(self, request):
         user = request.user
-        token = AccessToken.for_user(user)
-        token.set_exp(lifetime=timedelta(minutes=5))  # 5분간 유효
-        token["username"] = user.username
-
-        qr_string = str(token)
-
-        # QR 로그 저장
-        QRLog.objects.create(user=user, qr_string=qr_string)
-
+        
+        # 만료 시간 정의
+        expires_at = now() + timedelta(minutes=5)
+        
+        # ID를 얻기 위해 먼저 로그 항목 생성
+        qr_log = QRLog.objects.create(user=user, expires_at=expires_at)
+        
+        serializer = QRLogSerializer(qr_log)
         return self.create_response(
-            code=201,
-            message="QR JWT가 생성되었습니다.",
-            data={"qr_string": qr_string},
+            code=status.HTTP_201_CREATED,
+            message="QR 코드가 성공적으로 생성되었습니다.",
+            data=serializer.data,
             status_code=status.HTTP_201_CREATED
         )
 
 class QRCodeValidateView(BaseResponseMixin, APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    """
+    QR 코드 문자열(QRLog 레코드의 ID)을 검증합니다.
+    """
+    permission_classes = [permissions.AllowAny]
 
     @swagger_auto_schema(
         tags=["qr"],
         operation_summary="QR 코드 검증",
-        operation_description="QR 코드 JWT를 검증하고 사용자 정보를 반환합니다.",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            required=["qr_string"],
-            properties={
-                "qr_string": openapi.Schema(type=openapi.TYPE_STRING, description="검증할 JWT QR 문자열")
-            }
-        ),
+        operation_description="제공된 QR 코드(QRLog ID)를 검증합니다.",
+        request_body=QRCodeValidateRequestSerializer,
         responses={
-            200: openapi.Response(
-                description="QR 코드가 유효한 경우",
-                examples={
-                    "application/json": {
-                        "valid": True, 
-                        "user_id": 1, 
-                        "username": "example"
-                    }
-                }
-            ),
-            400: "유효하지 않은 QR 코드",
-            410: "QR 코드가 만료된 경우"
+            200: QRCodeValidateSuccessResponseSerializer,
+            410: QRCodeValidateFailedResponseSerializer,
+            400: ErrorResponseSerializer
         }
     )
     def post(self, request):
-        qr_string = request.data.get("qr_string")
+        qr_id = request.data.get('qr_string')
 
-        if not qr_string:
+        if not qr_id:
             return self.create_response(
-                code=400,
-                message="QR 데이터를 제공해야 합니다.",
+                code=status.HTTP_400_BAD_REQUEST,
+                message="잘못된 입력입니다: qr_string은 유효한 ID여야 합니다.",
+                data={"valid": False}, 
                 status_code=status.HTTP_400_BAD_REQUEST
             )
-
-        token_backend = TokenBackend(
-            algorithm='HS256', 
-            signing_key=settings.SECRET_KEY
-        )
-
+        
+        # 기본 키(ID)로 QR 코드 로그 항목 찾기
         try:
-            valid_data = token_backend.decode(qr_string, verify=True)
-            user_id = valid_data.get("user_id")
-            username = valid_data.get("username")
-
-            if not User.objects.filter(id=user_id).exists():
-                raise InvalidToken("존재하지 않는 사용자입니다.")
-
+            qr_log = QRLog.objects.select_related('user').get(pk=qr_id)
+        except QRLog.DoesNotExist:
             return self.create_response(
-                code=200,
-                message="QR 코드가 유효합니다.",
-                data={"valid": True, "user_id": user_id, "username": username}
-            )
-
-        except TokenError as e:
-            error_str = str(e).lower()
-            if "expired" in error_str:
-                return self.create_response(
-                    code=410,
-                    message="QR 코드가 만료되었습니다.",
-                    data={"valid": False},
-                    status_code=status.HTTP_410_GONE
-                )
-            return self.create_response(
-                code=400,
+                code=status.HTTP_400_BAD_REQUEST,
                 message="유효하지 않은 QR 코드입니다.",
                 data={"valid": False},
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
-class QRLogListView(BaseResponseMixin, APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+        # 사례 1: QR 코드가 이미 사용됨
+        if qr_log.decoded_at:
+            return self.create_response(
+                code=status.HTTP_410_GONE,
+                message="이미 사용된 QR 코드입니다.",
+                data={"valid": False},
+                status_code=status.HTTP_410_GONE
+            )
 
-    @swagger_auto_schema(
-        tags=["qr"],
-        operation_summary="QR 로그 조회",
-        operation_description="로그인 사용자의 QR 로그 목록을 조회합니다.",
-        responses={200: QRLogSerializer(many=True)}
-    )
-    def get(self, request):
-        logs = QRLog.objects.filter(user=request.user).order_by('-created_at')
-        serializer = QRLogSerializer(logs, many=True)
+        # 사례 2: QR 코드가 만료됨
+        if now() > qr_log.expires_at:
+            return self.create_response(
+                code=status.HTTP_410_GONE,
+                message="만료된 QR 코드입니다.",
+                data={"valid": False},
+                status_code=status.HTTP_410_GONE
+            )
 
+        # 모든 확인을 통과하면 QR 코드가 유효함
+        # 'decoded_at' 타임스탬프를 설정하여 사용됨으로 표시
+        qr_log.decoded_at = now()
+        qr_log.save()
+
+        user = qr_log.user
+        response_data = {
+            "valid": True, 
+            "user_id": user.id, 
+            "username": user.username
+        }
+        
         return self.create_response(
-            code=200,
-            message="QR 로그를 성공적으로 조회했습니다.",
-            data=serializer.data
+            code=status.HTTP_200_OK,
+            message="QR 코드가 유효합니다.",
+            data=response_data,
+            status_code=status.HTTP_200_OK
         )

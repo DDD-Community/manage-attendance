@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+from django.urls import reverse_lazy
 
 from .swagger_settings import SWAGGER_SETTINGS
 
@@ -22,9 +23,6 @@ load_dotenv()
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# django.contrib.sites
-SITE_ID = 1
 
 # Application definition
 INSTALLED_APPS = [
@@ -37,10 +35,13 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     
     # Third party apps
+    # 'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'debug_toolbar',
     'drf_yasg',
     'allauth',
     'allauth.account',
@@ -55,10 +56,12 @@ INSTALLED_APPS = [
     'profiles',
     'qrcodes',
     'schedules',
+    'attendances',
     'invites',
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -68,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'common.middleware.RequestLoggingMiddleware',
     'common.middleware.StandardizedErrorMiddleware',
 ]
 
@@ -84,12 +88,23 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # allauth 템플릿을 제대로 사용하려면 request 컨텍스트 프로세서가 필요합니다. (보통 이미 포함되어 있음)
+                # 'allauth.account.context_processors.account',
+                # 'allauth.socialaccount.context_processors.socialaccount',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'ddd_app_server.wsgi.application'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Default authentication backend
+    'allauth.account.auth_backends.AuthenticationBackend',  # Django Allauth backend
+]
+
+# Optional: Customize user model if needed
+AUTH_USER_MODEL = 'auth.User'  # Default user model
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -146,8 +161,8 @@ REST_FRAMEWORK = {
 
 # JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME', 1))),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME', 14))),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME', 365))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME', 365))),
     # 'ROTATE_REFRESH_TOKENS': True,
     # 'BLACKLIST_AFTER_ROTATION': True,
     # 'UPDATE_LAST_LOGIN': True,
@@ -160,8 +175,10 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
 CORS_ALLOW_CREDENTIALS = True
+
+LOGIN_REDIRECT_URL = reverse_lazy('account_profile') 
 
 # dj-rest-auth
 REST_AUTH = {
@@ -178,6 +195,8 @@ ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Do not require email confirmation
 
+# django.contrib.sites
+SITE_ID = 1
 
 # django-allauth social
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')

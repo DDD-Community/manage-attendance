@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
+from debug_toolbar.toolbar import debug_toolbar_urls
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
@@ -24,13 +25,14 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('health/', health_check),
     path('admin/', admin.site.urls),
-    path('auth/', include('accounts.urls')),
+    path('accounts/', include('accounts.urls')),
     
     # API v1
     path('api/v1/', include([
         path('profiles/', include('profiles.urls')),
         path('qrcodes/', include('qrcodes.urls')),
         path('schedules/', include('schedules.urls')),
+        path('attendances/', include('attendances.urls')),
         path('invites/', include('invites.urls')),
     ])),
     
@@ -39,6 +41,7 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
+    urlpatterns += debug_toolbar_urls()
     urlpatterns += [
         # API Documentation
         path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
