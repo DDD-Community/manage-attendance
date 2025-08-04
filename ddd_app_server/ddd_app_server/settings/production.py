@@ -104,22 +104,27 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file_errors'],
+            'handlers': ['file_errors'],
             'level': 'ERROR',
             'propagate': True,
         },
         'django.request': {
-            'handlers': ['console', 'file_errors'],
+            'handlers': ['file_errors'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'standardized_error': {
+            'handlers': ['console', 'file_errors_detail'],
             'level': 'ERROR',
             'propagate': False,
         },
         'request_logging': {
-            'handlers': ['console', 'file_access'],
+            'handlers': ['file_access'],
             'level': 'INFO',
             'propagate': False,
         },
         '': {  # Root logger
-            'handlers': ['console', 'file_general', 'file_errors'],
+            'handlers': ['console', 'file_general'],
             'level': 'INFO',
         },
     },

@@ -14,6 +14,7 @@ INTERNAL_IPS = [
     '106.242.190.114',
     '192.168.0.13'
 ]
+
 def show_toolbar(request):
     return True
 DEBUG_TOOLBAR_CONFIG = {
@@ -54,6 +55,7 @@ DATABASES = {
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # REST Framework settings for development
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (
     'rest_framework.renderers.JSONRenderer',
@@ -102,21 +104,15 @@ LOGGING = {
             'filename': '/app/logs/django_access.log',
             'formatter': 'verbose',
         },
-        'file_errors_detail': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '/app/logs/django_errors_detail.log',
-            'formatter': 'verbose',
-        }
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file_errors'],
+            'handlers': ['file_errors'],
             'level': 'ERROR',
             'propagate': True,
         },
         'django.request': {
-            'handlers': ['console', 'file_errors'],
+            'handlers': ['file_errors'],
             'level': 'ERROR',
             'propagate': False,
         },
@@ -126,12 +122,12 @@ LOGGING = {
             'propagate': False,
         },
         'request_logging': {
-            'handlers': ['console', 'file_access'],
-            'level': 'DEBUG',
+            'handlers': ['file_access'],
+            'level': 'INFO',
             'propagate': False,
         },
         '': {  # Root logger
-            'handlers': ['console', 'file_general', 'file_errors'],
+            'handlers': ['console', 'file_general'],
             'level': 'INFO',
         },
     },

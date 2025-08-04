@@ -1,3 +1,4 @@
+import logging
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -16,6 +17,8 @@ from common.serializers import ErrorResponseSerializer
 from .serializers import QRLogSerializer
 from common.mixins import BaseResponseMixin
 from attendances.models import Attendance
+
+logger = logging.getLogger(__name__)
 
 # QR 코드 생성 응답 Serializer
 class QRCodeGenerateSuccessResponseSerializer(serializers.Serializer):
@@ -123,8 +126,10 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
     )
     def post(self, request):
         qr_id = request.data.get('qr_string')
+        logger.info(f"QR-VALIDATE: Received qr_id: {qr_id}")
 
         if not qr_id:
+            logger.warning("QR-VALIDATE: Invalid input - qr_string is missing.")
             return self.create_response(
                 code=status.HTTP_400_BAD_REQUEST,
                 message="잘못된 입력입니다: qr_string은 유효한 ID여야 합니다.",
@@ -135,7 +140,9 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
         # 기본 키(ID)로 QR 코드 로그 항목 찾기
         try:
             qr_log = QRLog.objects.select_related('user').get(pk=qr_id)
+            logger.info(f"QR-VALIDATE: Found QRLog entry: id={qr_log.id}, decoded_at={qr_log.decoded_at}, expires_at={qr_log.expires_at}")
         except QRLog.DoesNotExist:
+            logger.warning(f"QR-VALIDATE: QRLog with id {qr_id} not found.")
             return self.create_response(
                 code=status.HTTP_400_BAD_REQUEST,
                 message="유효하지 않은 QR 코드입니다.",
@@ -145,6 +152,7 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
 
         # 사례 1: QR 코드가 이미 사용됨
         if qr_log.decoded_at:
+            logger.warning(f"QR-VALIDATE: QR code {qr_id} has already been used at {qr_log.decoded_at}.")
             return self.create_response(
                 code=status.HTTP_410_GONE,
                 message="이미 사용된 QR 코드입니다.",
@@ -154,6 +162,7 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
 
         # 사례 2: QR 코드가 만료됨
         if now() > qr_log.expires_at:
+            logger.warning(f"QR-VALIDATE: QR code {qr_id} has expired at {qr_log.expires_at}.")
             return self.create_response(
                 code=status.HTTP_410_GONE,
                 message="만료된 QR 코드입니다.",
@@ -165,6 +174,7 @@ class QRCodeValidateView(BaseResponseMixin, APIView):
         # 'decoded_at' 타임스탬프를 설정하여 사용됨으로 표시
         qr_log.decoded_at = now()
         qr_log.save()
+        logger.info(f"QR-VALIDATE: Successfully validated and marked QR code {qr_id} as used.")
 
         user = qr_log.user
         response_data = {

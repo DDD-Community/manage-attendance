@@ -90,7 +90,7 @@ class RequestLoggingMiddleware:
             tag = "SLOW_API"
 
         self.logger.info(
-            f"{datetime.now(UTC)} ACCESS LOG {tag} {request.method} {request.get_full_path()} "
+            f"{datetime.now(UTC)}(UTC) ACCESS LOG {tag} {request.method} {request.get_full_path()} "
             f"status={response.status_code} elapsed={elapsed_time} headers={self._headers(request)} "
             f"body={body}"
         )
