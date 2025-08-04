@@ -15,6 +15,9 @@ class Profile(models.Model):
     def __str__(self):
         return f"{self.user.username}"
 
+    def delete(self, *args, **kwargs):
+        raise PermissionError("Profiles cannot be deleted.")
+
     class Meta:
         ordering = ['-created_at']
 
