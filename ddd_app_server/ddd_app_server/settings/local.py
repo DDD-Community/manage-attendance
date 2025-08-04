@@ -116,11 +116,6 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': False,
         },
-        'standardized_error': {
-            'handlers': ['console', 'file_errors_detail'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
         'request_logging': {
             'handlers': ['file_access'],
             'level': 'INFO',
