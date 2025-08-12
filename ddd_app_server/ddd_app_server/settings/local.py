@@ -22,6 +22,7 @@ DEBUG_TOOLBAR_CONFIG = {
     'INSERT_BEFORE': '</head>',
     'HIDE_DJANGO_SQL': True,
     'HIDE_TEMPLATE_CONTEXT': True,
+    'IS_RUNNING_TESTS': False,
 }
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
@@ -89,19 +90,19 @@ LOGGING = {
         'file_errors': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': '/app/logs/django_errors.log',
+            'filename': BASE_DIR.parent / 'logs/django_errors.log',
             'formatter': 'verbose',
         },
         'file_general': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/app/logs/django_general.log',
+            'filename': BASE_DIR.parent / 'logs/django_general.log',
             'formatter': 'verbose',
         },
         'file_access': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/app/logs/django_access.log',
+            'filename': BASE_DIR.parent / 'logs/django_access.log',
             'formatter': 'verbose',
         },
     },

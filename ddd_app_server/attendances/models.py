@@ -3,7 +3,6 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from schedules.models import Schedule
-from profiles.models import Cohort
 
 class Attendance(models.Model):
     ATTENDANCE_STATUS_CHOICES = (
@@ -26,7 +25,6 @@ class Attendance(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     method = models.CharField(max_length=10, choices=METHOD_CHOICES, null=True, blank=True)
     note = models.TextField(blank=True, null=True)
-    cohort = models.ForeignKey(Cohort, on_delete=models.SET_NULL, null=True, blank=True, related_name='attendances')
 
     def __str__(self):
         return f"{self.user} - {self.schedule} ({self.status})"

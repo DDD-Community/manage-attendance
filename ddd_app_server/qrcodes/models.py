@@ -10,3 +10,6 @@ class QRLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     decoded_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"QRLog for {self.user.username} at {self.created_at}"

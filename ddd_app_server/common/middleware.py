@@ -9,6 +9,7 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from .exceptions import APIException
 
 
 class StandardizedErrorMiddleware:
