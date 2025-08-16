@@ -128,3 +128,12 @@ class AppleLoginView(SocialLoginView):
     permission_classes = []
 
     adapter_class = AppleOAuth2Adapter
+
+
+class UserWithdrawalView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        user = request.user
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

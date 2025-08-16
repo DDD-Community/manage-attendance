@@ -6,7 +6,8 @@ from .views import (
     CheckEmailUsedView,
     ProfileView,
     # ObtainJWTFromSessionView,
-    EmailTokenObtainPairView
+    EmailTokenObtainPairView,
+    UserWithdrawalView
 )
 
 urlpatterns = [
@@ -31,4 +32,5 @@ urlpatterns = [
     # path("apple/url/", AppleLoginUrl.as_view(), name="apple_login_url"),
     # path("apple/login/", AppleLoginView.as_view(), name="apple_login"),
     # path("apple/callback/", AppleLoginCallback.as_view(), name="apple_login_callback"),
+    path("withdrawal/", UserWithdrawalView.as_view(), name="account_withdrawal"),
 ]
