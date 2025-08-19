@@ -2,12 +2,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework_simplejwt.views import TokenRefreshView
-from debug_toolbar.toolbar import debug_toolbar_urls
-from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from rest_framework import permissions
+from drf_yasg.views import get_schema_view
 from ddd_app_server.health import health_check
+from debug_toolbar.toolbar import debug_toolbar_urls
+from rest_framework import permissions
+from .views import GoogleLogin, AppleLogin, DeactivateUserView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -25,6 +25,13 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('health/', health_check),
     path('admin/', admin.site.urls),
+    
+    path('auth/', include('dj_rest_auth.urls')),
+    path('auth/registration/', include('dj_rest_auth.registration.urls')),
+    path('auth/google/', GoogleLogin.as_view(), name='google_login'),
+    path('auth/apple/', AppleLogin.as_view(), name='apple_login'),
+    path('auth/deactivate/', DeactivateUserView.as_view(), name='deactivate_user'),
+
     path('accounts/', include('accounts.urls')),
     
     # API v1
@@ -35,9 +42,6 @@ urlpatterns = [
         path('attendances/', include('attendances.urls')),
         path('invites/', include('invites.urls')),
     ])),
-    
-    # # JWT Token Refresh
-    # path('api/v1/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 if settings.DEBUG:

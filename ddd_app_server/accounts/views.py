@@ -114,20 +114,20 @@ class ProfileView(LoginRequiredMixin, View):
         return render(request, self.template_name, context)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
-class GoogleLoginView(SocialLoginView):
-    authentication_classes = []
-    permission_classes = []
+# @method_decorator(csrf_exempt, name='dispatch')
+# class GoogleLoginView(SocialLoginView):
+#     authentication_classes = []
+#     permission_classes = []
 
-    adapter_class = GoogleOAuth2Adapter
+#     adapter_class = GoogleOAuth2Adapter
 
 
-@method_decorator(csrf_exempt, name='dispatch')
-class AppleLoginView(SocialLoginView):
-    authentication_classes = []
-    permission_classes = []
+# @method_decorator(csrf_exempt, name='dispatch')
+# class AppleLoginView(SocialLoginView):
+#     authentication_classes = []
+#     permission_classes = []
 
-    adapter_class = AppleOAuth2Adapter
+#     adapter_class = AppleOAuth2Adapter
 
 
 class UserWithdrawalView(APIView):

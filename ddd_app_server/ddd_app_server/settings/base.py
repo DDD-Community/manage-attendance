@@ -145,12 +145,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework settings
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': (
         # 'rest_framework.permissions.IsAuthenticated',
         'rest_framework.permissions.AllowAny', # Allow any user to access the API because we are using JWT
-    ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
@@ -185,14 +185,15 @@ REST_AUTH = {
     'USE_JWT': True,
     'JWT_AUTH_COOKIE': '_auth',
     'JWT_AUTH_REFRESH_COOKIE': '_refresh',
-    'JWT_AUTH_HTTPONLY': False,
+    'JWT_AUTH_HTTPONLY': False,  # 안드로이드 앱에서 토큰을 사용하기 위함
     'JWT_AUTH_RETURN_EXPIRATION': True,
 }
 
 # django-allauth
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Use Email / Password authentication
-ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Use Email / Password authentication
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Do not require email confirmation
 
 # django.contrib.sites
