@@ -57,9 +57,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Update basic fields
         if 'name' in validated_data:
             instance.name = validated_data['name']
-            user = instance.user
-            user.username = validated_data['name']
-            user.save()
 
         # Handle invite code
         if 'invite_code_id' in validated_data:

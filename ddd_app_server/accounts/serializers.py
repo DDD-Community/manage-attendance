@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
+from dj_rest_auth.registration.serializers import RegisterSerializer
 
 UserModel = get_user_model()
 
@@ -78,3 +79,27 @@ class EmailTokenObtainSerializer(serializers.Serializer):
         }
 
         return data
+
+
+class CustomRegisterSerializer(RegisterSerializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'username' in self.fields:
+            del self.fields['username']
+    
+    def get_cleaned_data(self):
+        data = super().get_cleaned_data()
+        # Set username to email to ensure uniqueness
+        if 'email' in data:
+            data['username'] = data['email']
+        return data
+    
+    def save(self, request):
+        user = super().save(request)
+        
+        # Force set username to email after user creation
+        if user.email and not user.username:
+            user.username = user.email
+            user.save()
+        
+        return user

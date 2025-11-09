@@ -187,6 +187,7 @@ REST_AUTH = {
     'JWT_AUTH_REFRESH_COOKIE': '_refresh',
     'JWT_AUTH_HTTPONLY': False,  # 안드로이드 앱에서 토큰을 사용하기 위함
     'JWT_AUTH_RETURN_EXPIRATION': True,
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',  # 가입시 username 제외
 }
 
 # django-allauth
